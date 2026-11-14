@@ -2,7 +2,7 @@ name: Publier sur GitHub Pages
 
 on:
   push:
-    branches: [main, claude/reading-learning-game-app-e9ecc3]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
