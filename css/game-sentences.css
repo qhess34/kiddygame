@@ -1,1 +1,27 @@
-/* Styles du jeu sentences */
+.game-sentences { display: flex; align-items: center; justify-content: center; padding: 6px 16px 14px; min-height: 0; }
+.game-sentences .sent-area { width: 100%; max-width: 1100px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(12px, 3vh, 36px); }
+.game-sentences .sent-top { display: flex; align-items: center; justify-content: center; gap: clamp(14px, 3vw, 36px); width: 100%; }
+.game-sentences .sent-line { background: #fff; border-radius: 28px; box-shadow: var(--shadow); padding: clamp(10px, 2.5vh, 28px) clamp(18px, 3vw, 40px); font-size: clamp(30px, 6.5vh, 56px); max-width: 100%; text-align: center; }
+.game-sentences .sentence { justify-content: center; }
+.game-sentences .sentence .word-md { font-size: clamp(32px, 7vh, 60px); }
+.game-sentences .sentence .punct { font-size: clamp(32px, 7vh, 60px); }
+.game-sentences .word { border-radius: 14px; padding: 0 .12em; transition: background .15s, transform .15s; }
+.game-sentences .word.sent-hl { background: #fff1a8; transform: scale(1.12); }
+.game-sentences .sent-hear, .game-sentences .sent-hint { width: 76px; height: 76px; font-size: 38px; flex: none; }
+.game-sentences .sent-pics { display: flex; gap: clamp(12px, 2.5vw, 32px); justify-content: center; width: 100%; }
+.game-sentences .sent-pic { flex: 1 1 0; max-width: 340px; min-height: clamp(110px, 30vh, 260px); border: 5px solid #fff; border-radius: 30px; background: #fff; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center; padding: 6px; }
+.game-sentences .sent-emoji { font-size: clamp(54px, 13vh, 120px); line-height: 1.05; white-space: nowrap; letter-spacing: .04em; }
+.game-sentences .sent-bigpic { width: auto; min-width: clamp(130px, 22vh, 220px); height: clamp(110px, 24vh, 220px); padding: 6px 24px; background: #fff; border-radius: 30px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center; }
+.game-sentences .sent-bigpic .sent-emoji { font-size: clamp(60px, 15vh, 130px); }
+.game-sentences .sent-sentences { display: flex; flex-direction: column; gap: clamp(8px, 2vh, 20px); width: 100%; align-items: center; }
+.game-sentences .sent-choice { width: min(100%, 880px); min-height: 80px; border: 5px solid #fff; border-radius: 28px; background: #fff; box-shadow: var(--shadow); padding: 6px 18px; display: flex; align-items: center; justify-content: center; }
+.game-sentences .sent-choice .word-md, .game-sentences .sent-choice .punct { font-size: clamp(28px, 5.6vh, 50px); }
+.game-sentences .sent-right { border-color: var(--good) !important; background: #e6f8ea !important; }
+.game-sentences .sent-wrong { opacity: .5; }
+@media (max-height: 500px) {
+  .game-sentences { padding: 0 12px 6px; }
+  .game-sentences .sent-area { gap: 8px; }
+  .game-sentences .sent-hear, .game-sentences .sent-hint { width: 64px; height: 64px; }
+  .game-sentences .sent-choice { min-height: 72px; }
+  .game-sentences .sent-pic { min-height: 100px; }
+}
