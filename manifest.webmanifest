@@ -1,0 +1,12 @@
+{
+  "name": "Lire en jouant",
+  "short_name": "Lire en jouant",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#fff6dc",
+  "theme_color": "#ffd166",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
