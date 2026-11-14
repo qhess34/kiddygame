@@ -96,3 +96,25 @@ export function renderSentence(words, { script = 'lower', colors = true, punct =
   line.append(el('span', { class: 'punct' }, punct));
   return line;
 }
+
+// Réduit la taille des mots trop longs pour qu'ils tiennent dans leur conteneur
+// et dans l'écran (ex. HIPPOPOTAME sur un téléphone). Sans effet sur les mots qui tiennent.
+export function fitWords(root) {
+  for (const w of root.querySelectorAll('.word')) {
+    w.style.fontSize = '';
+    const box = w.parentElement;
+    const r = w.getBoundingClientRect();
+    if (!r.width) continue;
+    const cs = box ? getComputedStyle(box) : null;
+    const inner = box && cs.display !== 'inline' && cs.display !== 'inline-flex'
+      ? box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) : Infinity;
+    const limit = Math.min(inner > 0 ? inner : Infinity, window.innerWidth - 24);
+    const overflowRight = r.right - (window.innerWidth - 8);
+    const needed = Math.max(r.width - limit, overflowRight, 8 - r.left);
+    if (needed > 0.5) {
+      const size = parseFloat(getComputedStyle(w).fontSize);
+      const ratio = Math.max(0.35, (r.width - needed) / r.width);
+      w.style.fontSize = Math.floor(size * ratio) + 'px';
+    }
+  }
+}

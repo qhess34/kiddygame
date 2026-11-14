@@ -2,7 +2,7 @@
 // filtrés selon les réglages (graphèmes désactivés, mots masqués).
 import { WORDS } from '../data/words.js';
 import { buildWord, shuffle } from './words.js';
-import { getState } from './state.js';
+import { getState, save } from './state.js';
 
 let cache = null;
 let cacheKey = '';
@@ -41,15 +41,32 @@ export function poolForLevel(level, { reviewRatio = 0.3, min = 6 } = {}) {
   return pool.filter((w) => (seen.has(w.text) ? false : seen.add(w.text)));
 }
 
-// Choisit des mots "à travailler" en priorité (déjà ratés ou peu vus).
+// Choisit n mots (images distinctes) en variant le plus possible :
+// - les mots déjà montrés récemment sont fortement écartés (historique sauvegardé) ;
+// - les mots jamais vus ou souvent ratés reviennent un peu plus, sans jamais dominer.
+const RECENT_MAX = 30;
+
 export function weightedPick(pool, n) {
-  const stats = getState().stats.words;
+  const st = getState();
+  const stats = st.stats.words;
+  const recent = st.progress.recent || [];
+  // Plus le pool est petit, plus la fenêtre d'exclusion doit être courte.
+  const window = Math.min(RECENT_MAX, Math.max(0, pool.length - n * 2));
+  const recentSet = recent.slice(-window);
   const scored = pool.map((w) => {
     const s = stats[w.id];
-    let weight = 1;
-    if (!s) weight = 1.6; // jamais vu
-    else weight = 1 + s.err * 0.8 - Math.min(s.ok, 6) * 0.1;
-    return { w, k: Math.random() * Math.max(0.3, weight) };
+    let weight;
+    if (!s) weight = 1.3; // jamais vu
+    else {
+      const rate = (s.err + 0.5) / (s.ok + s.err + 1); // taux d'erreur lissé (0..1)
+      weight = 0.7 + rate; // entre ~0.7 et ~1.7 : un mot raté revient, sans saturer
+    }
+    const pos = recentSet.lastIndexOf(w.id);
+    if (pos !== -1) {
+      const age = recentSet.length - pos; // 1 = vu à l'instant
+      weight *= Math.min(1, 0.05 + age / (window || 1));
+    }
+    return { w, k: Math.random() * weight };
   });
   scored.sort((a, b) => b.k - a.k);
   const out = [];
@@ -60,6 +77,8 @@ export function weightedPick(pool, n) {
     out.push(w);
     if (out.length === n) break;
   }
+  st.progress.recent = recent.concat(out.map((w) => w.id)).slice(-RECENT_MAX);
+  save();
   return out;
 }
 

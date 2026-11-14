@@ -104,7 +104,7 @@ export default {
         });
       } else {
         btn.classList.add('dim');
-        ctx.bad(w, btn);
+        ctx.bad(target, btn); // l’erreur porte sur le mot à lire, pas sur le distracteur
       }
     }
 

@@ -105,7 +105,7 @@ export default {
         });
       } else {
         btn.classList.add('dim');
-        ctx.bad(w, btn);
+        ctx.bad(target, btn); // l’erreur porte sur le mot à lire, pas sur le distracteur
         const my = target;
         // Après l'encouragement, on redit le mot.
         later(() => { if (my === target && !locked) speak(my.say); }, 2400);

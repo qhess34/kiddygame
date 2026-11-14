@@ -9,7 +9,7 @@
 // Le jeu appelle ctx.good(word, el) / ctx.bad(word, el) à chaque réponse,
 // puis ctx.win() quand la manche est terminée. L'hôte affiche la victoire et
 // relance une nouvelle manche si l'enfant veut continuer.
-import { el, renderWord, renderGrapheme, renderSentence } from './render.js';
+import { el, renderWord, renderGrapheme, renderSentence, fitWords } from './render.js';
 import { speak, instruct, stopSpeaking, sfx, randomPraise, randomRetry } from './audio.js';
 import { confetti, sparkle, wiggle, bounce, mascotSay, mascotSVG } from './fx.js';
 import { getState, scriptFor, awardRound, recordAnswer } from './state.js';
@@ -22,6 +22,7 @@ let active = null;
 export function stopGame() {
   if (active) {
     try { active.inst && active.inst.destroy && active.inst.destroy(); } catch (e) { console.error(e); }
+    try { active.cleanup && active.cleanup(); } catch (e) { /* */ }
     active = null;
   }
   stopSpeaking();
@@ -49,6 +50,18 @@ export function runGame(game, { level, onExit, options = {} }) {
 
   const session = { game, level, round: 0, errors: 0, inst: null };
   active = session;
+
+  // Ajuste automatiquement les mots trop longs (après chaque changement de contenu ou de taille).
+  let fitQueued = false;
+  const queueFit = () => {
+    if (fitQueued) return;
+    fitQueued = true;
+    requestAnimationFrame(() => requestAnimationFrame(() => { fitQueued = false; fitWords(root); }));
+  };
+  const mo = new MutationObserver(queueFit);
+  mo.observe(root, { childList: true, subtree: true });
+  window.addEventListener('resize', queueFit);
+  session.cleanup = () => { mo.disconnect(); window.removeEventListener('resize', queueFit); };
 
   btnHome.addEventListener('click', () => { sfx('tap'); stopGame(); onExit && onExit(); });
   btnHelp.addEventListener('click', () => { sfx('tap'); speak(game.instruction(ctx)); });
