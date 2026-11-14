@@ -44,7 +44,7 @@
 .game-syllables .sy-syl-letters { display: inline-flex; align-items: baseline; letter-spacing: .02em; }
 .game-syllables .sy-arc {
   display: block; width: 100%; height: .3em; border: .09em solid var(--arc); border-top: none;
-  border-radius: 0 0 999px 999px / 0 0 100% 100%; margin-bottom: .05em;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%; margin-bottom: .05em;
 }
 
 .game-syllables .sy-foot { height: clamp(72px, 12vh, 100px); display: flex; align-items: center; justify-content: center; visibility: hidden; }

@@ -1,1 +1,33 @@
-/* Styles du jeu mystery */
+/* Jeu 4 — Le mot mystère */
+.game-mystery { justify-content: space-evenly; gap: 1.5vh; }
+.game-mystery .my-bar { width: 100%; display: flex; align-items: center; justify-content: space-between; max-width: 900px; }
+.game-mystery .my-variant { font-size: clamp(24px, 4vh, 36px); background: #fff; border-radius: 999px; padding: 4px 14px; box-shadow: var(--shadow); line-height: 1.3; }
+.game-mystery .my-dots { display: flex; gap: 10px; }
+.game-mystery .my-dot { width: 18px; height: 18px; border-radius: 50%; background: rgba(255,255,255,.7); box-shadow: inset 0 0 0 3px rgba(0,0,0,.12); }
+.game-mystery .my-dot.now { box-shadow: inset 0 0 0 3px var(--accent); background: #fff; }
+.game-mystery .my-dot.done { background: var(--good); box-shadow: none; }
+.game-mystery .my-picture { position: relative; display: flex; align-items: center; justify-content: center; }
+.game-mystery .my-img { width: clamp(120px, 34vh, 280px); height: clamp(120px, 34vh, 280px); }
+.game-mystery .my-emoji { font-size: clamp(70px, 22vh, 180px); display: inline-block; }
+.game-mystery .my-img.jump .my-emoji { animation: my-jump .7s cubic-bezier(.2,1.4,.4,1); }
+@keyframes my-jump { 0%,100% { transform: translateY(0); } 35% { transform: translateY(-.25em) scale(1.12); } 60% { transform: translateY(0) scale(.95); } }
+.game-mystery .my-help { position: absolute; left: calc(100% + clamp(14px, 3vw, 30px)); top: 50%; transform: translateY(-50%); width: clamp(60px, 10vh, 84px); height: clamp(60px, 10vh, 84px); font-size: clamp(28px, 5vh, 40px); }
+.game-mystery .my-help:active { transform: translateY(calc(-50% + 3px)); }
+.game-mystery .my-choices { width: 100%; max-width: 1100px; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(10px, 2vw, 24px); }
+.game-mystery .my-choices.locked { pointer-events: none; }
+.game-mystery .my-choice {
+  min-height: max(84px, 15vh); border: none; border-radius: 26px; background: #fff; box-shadow: var(--shadow);
+  font-size: clamp(22px, min(calc(40vw / var(--n)), 8vh), 64px); padding: 8px 6px;
+  display: flex; align-items: center; justify-content: center; transition: transform .15s, opacity .25s, background .25s;
+}
+.game-mystery .my-choice .word { font-size: inherit; }
+.game-mystery .my-choice.dim { opacity: .45; background: #eee; }
+.game-mystery .my-choice.right { background: #dcf8e2; box-shadow: 0 0 0 5px var(--good), var(--shadow); }
+@media (max-height: 500px) {
+  .game-mystery { gap: 0; padding-top: 0; }
+  .game-mystery .my-bar { position: absolute; top: 0; left: 12px; right: 12px; width: auto; max-width: none; }
+  .game-mystery .my-img { width: 110px; height: 110px; }
+  .game-mystery .my-emoji { font-size: 70px; }
+  .game-mystery .my-help { width: 52px; height: 52px; font-size: 24px; }
+  .game-mystery .my-choice { min-height: 84px; }
+}

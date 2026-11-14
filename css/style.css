@@ -217,4 +217,6 @@ body.portrait-small #rotate-hint p { margin: 0; }
   .victory-owl { width: 80px; }
   .victory-stars { font-size: 40px; }
   .game-tile { min-height: 120px; }
+  .mascot-pop-owl { width: 54px; }
+  .mascot-pop-bubble { font-size: 18px; padding: 8px 12px; margin-bottom: 30px; }
 }
