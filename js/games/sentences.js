@@ -97,6 +97,7 @@ export default {
           ctx.bad(null, node);
         }
       };
+      area.className = 'sent-area ' + (variantA ? 'sent-va' : 'sent-vb');
       if (variantA) {
         const line = sentenceNode(target);
         const hear = el('button', { class: 'round-btn sent-hear', 'aria-label': 'Écouter la phrase', onclick: () => { ctx.sfx('tap'); karaoke(target, line, false); } }, '🔊');

@@ -21,6 +21,12 @@
 @media (max-height: 500px) {
   .game-sentences { padding: 0 12px 6px; }
   .game-sentences .sent-area { gap: 8px; }
+  .game-sentences .sent-vb { flex-direction: row; gap: 14px; }
+  .game-sentences .sent-vb .sent-top { flex-direction: column; width: auto; flex: none; gap: 8px; }
+  .game-sentences .sent-vb .sent-bigpic { height: 110px; min-width: 150px; }
+  .game-sentences .sent-vb .sent-bigpic .sent-emoji { font-size: 56px; }
+  .game-sentences .sent-vb .sent-sentences { flex: 1; gap: 8px; }
+  .game-sentences .sent-choice .word-md, .game-sentences .sent-choice .punct { font-size: 30px; }
   .game-sentences .sent-hear, .game-sentences .sent-hint { width: 64px; height: 64px; }
   .game-sentences .sent-choice { min-height: 72px; }
   .game-sentences .sent-pic { min-height: 100px; }

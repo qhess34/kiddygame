@@ -214,8 +214,14 @@ body.portrait-small #rotate-hint p { margin: 0; }
   .round-btn { width: 46px; height: 46px; font-size: 22px; }
   .hud-stars { font-size: 18px; padding: 6px 12px; }
   .big-btn { min-height: 64px; font-size: 28px; }
-  .victory-owl { width: 80px; }
-  .victory-stars { font-size: 40px; }
+  .victory-owl { width: 56px; }
+  .victory-stars { font-size: 32px; }
+  .victory-stars span:nth-child(2) { font-size: 40px; }
+  .victory-card { padding: 10px 20px; gap: 4px; max-height: 96vh; }
+  .victory-text { font-size: 22px; }
+  .victory-gift { font-size: 16px; padding: 2px 12px; }
+  .big-emoji { font-size: 26px; }
+  .victory-actions { margin-top: 2px; }
   .game-tile { min-height: 120px; }
   .mascot-pop-owl { width: 54px; }
   .mascot-pop-bubble { font-size: 18px; padding: 8px 12px; margin-bottom: 30px; }
