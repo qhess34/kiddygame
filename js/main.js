@@ -219,3 +219,8 @@ checkOrientation();
 window.__app = { showHome, showMap, showMenu, showAlbum, play, getState };
 
 route();
+
+// Jeu disponible hors connexion après une première visite.
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
