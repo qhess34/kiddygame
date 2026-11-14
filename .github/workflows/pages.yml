@@ -27,7 +27,7 @@ jobs:
       - name: Préparer le site
         run: |
           mkdir -p _site
-          cp -r index.html manifest.webmanifest icon.svg sw.js css js fonts _site/
+          cp -r index.html manifest.webmanifest icon.svg icons sw.js css js fonts _site/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

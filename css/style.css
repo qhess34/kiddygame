@@ -226,3 +226,18 @@ body.portrait-small #rotate-hint p { margin: 0; }
   .mascot-pop-owl { width: 54px; }
   .mascot-pop-bubble { font-size: 18px; padding: 8px 12px; margin-bottom: 30px; }
 }
+
+/* ---- Installation sur l'écran d'accueil ---- */
+.install-slot:empty { display: none; }
+.install-banner { display: flex; align-items: center; gap: 6px; }
+.install-btn { display: inline-flex; align-items: center; gap: 10px; border: none; border-radius: 999px; background: #fff; color: var(--consonant); padding: 10px 22px; font-size: clamp(17px, 2.2vw, 22px); font-weight: 700; box-shadow: var(--shadow); }
+.install-btn:active { transform: translateY(3px); }
+.install-icon { font-size: 1.4em; }
+.install-close { width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255,255,255,.6); font-size: 16px; color: var(--soft); }
+.install-help { position: fixed; inset: 0; z-index: 90; background: rgba(43,43,58,.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.install-help-card { background: #fff; border-radius: 28px; padding: 22px 28px; max-width: 520px; box-shadow: var(--shadow); font-size: 20px; display: flex; flex-direction: column; align-items: center; max-height: 92vh; overflow: auto; }
+.install-help-card h2 { margin: 0 0 6px; }
+.install-help-card ol { padding-left: 1.2em; line-height: 1.5; }
+.ios-share { display: inline-block; border: 2px solid var(--consonant); border-radius: 6px; padding: 0 6px; color: var(--consonant); font-weight: 700; }
+.install-help-note { color: var(--soft); font-size: 17px; text-align: center; }
+@media (max-height: 500px) { .install-btn { padding: 6px 16px; } .home-screen { gap: 1.5vh; } }

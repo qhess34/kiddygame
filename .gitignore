@@ -1,4 +1,4 @@
 node_modules/
 *.png
-!assets/**/*.png
+!icons/*.png
 test-results/

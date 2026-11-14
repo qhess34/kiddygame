@@ -7,6 +7,7 @@ import { runGame, stopGame } from './core/gamehost.js';
 import { gamesForLevel, gameById } from './games/index.js';
 import { LEVELS, STARS_TO_UNLOCK, levelInfo } from './data/levels.js';
 import { openParentGate } from './screens/parent.js';
+import { installBanner } from './core/install.js';
 
 const app = document.getElementById('app');
 let audioUnlocked = false;
@@ -78,6 +79,7 @@ function showHome() {
       ),
     ),
     play,
+    installBanner(),
     el('div', { class: 'home-bottom' },
       el('button', { class: 'pill-btn', 'aria-label': 'Mes trésors', onclick: () => { sfx('tap'); showAlbum(); } }, '🎁 ', el('span', {}, String(st.progress.stickers.length)), '  ⭐ ', el('span', {}, String(st.progress.totalStars))),
     ),

@@ -22,6 +22,7 @@ function defaults() {
       mysteryColors: 'auto',   // auto | on | off
       itemsPerRound: 3,
       pin: '',
+      installDismissed: false,
     },
     progress: {
       currentLevel: 1,
