@@ -36,7 +36,7 @@ export const GRAPHEMES = [
   { key: 'ê', label: 'ê', kind: 'v', level: 2, example: 'fête', sound: '[ɛ] comme fête' },
   { key: 't_', label: 't muet', kind: 'm', level: 2, example: 'lit', sound: 'ne se prononce pas (lit, robot)' },
   { key: 'g', label: 'g', kind: 'c', level: 2, example: 'tigre', sound: '[g] comme tigre ([ʒ] devant e, i : girafe)' },
-  { key: 'x', label: 'x', kind: 'c', level: 2, example: 'taxi', sound: '[ks] comme taxi' },
+  { key: 'x', label: 'x', kind: 'c', level: 2, example: 'taxi', sound: '[ks] comme taxi ([s] dans six, dix)' },
   { key: 'y', label: 'y', kind: 'c', level: 2, example: 'yoyo', sound: '[j] comme yoyo (voyelle [i] dans stylo, cygne)' },
 
   // ── Niveau 3 : premiers digrammes, e [ə], muettes s, p, h
@@ -77,8 +77,9 @@ export const GRAPHEMES = [
   { key: 'mm', label: 'mm', kind: 'd', level: 4, example: 'pomme', sound: '[m] comme pomme' },
   { key: 'nn', label: 'nn', kind: 'd', level: 4, example: 'couronne', sound: '[n] comme couronne' },
 
-  // ── Niveau 5 : d muet
+  // ── Niveau 5 : d muet, z muet
   { key: 'd_', label: 'd muet', kind: 'm', level: 5, example: 'renard', sound: 'ne se prononce pas (renard)' },
+  { key: 'z_', label: 'z muet', kind: 'm', level: 5, example: 'riz', sound: 'ne se prononce pas (riz)' },
 
   // ── Niveau 6
   { key: 'ei', label: 'ei', kind: 'd', level: 6, example: 'baleine', sound: '[ɛ] comme baleine' },
@@ -102,4 +103,13 @@ export const GRAPHEMES = [
   { key: 'î', label: 'î', kind: 'v', level: 7, example: 'île', sound: '[i] comme île' },
   { key: 'ï', label: 'ï', kind: 'v', level: 7, example: 'maïs', sound: '[i] comme maïs (se lit séparément du a)' },
   { key: 'f_', label: 'f muet', kind: 'm', level: 7, example: 'cerf', sound: 'ne se prononce pas (cerf)' },
+  { key: 'x_', label: 'x muet', kind: 'm', level: 7, example: 'ciseaux', sound: 'ne se prononce pas (ciseaux, yeux)' },
+  { key: 'i_', label: 'i muet', kind: 'm', level: 7, example: 'oignon', sound: 'ne se prononce pas (oignon)' },
+  { key: 'sh', label: 'sh', kind: 'd', level: 7, example: 'sushi', sound: '[ʃ] comme sushi' },
+  { key: 'q', label: 'q', kind: 'c', level: 7, example: 'coq', sound: '[k] comme coq (q final)' },
+  { key: 'ail', label: 'ail', kind: 'd', level: 7, example: 'corail', sound: '[aj] comme corail' },
+  { key: 'aî', label: 'aî', kind: 'd', level: 7, example: 'chaîne', sound: '[ɛ] comme chaîne' },
+  { key: 'ay', label: 'ay', kind: 'd', level: 7, example: 'crayon', sound: '[ɛj] comme crayon' },
+  { key: 'im', label: 'im', kind: 'd', level: 7, example: 'imprimante', sound: '[ɛ̃] comme imprimante (devant m, b, p)' },
+  { key: 'û', label: 'û', kind: 'v', level: 7, example: 'flûte', sound: '[y] comme flûte' },
 ];

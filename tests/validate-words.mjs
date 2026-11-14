@@ -9,7 +9,9 @@ const errors = [];
 const warnings = [];
 const err = (m) => errors.push(m);
 
-const QUOTA = { 1: 20, 2: 30, 3: 30, 4: 30, 5: 30, 6: 30, 7: 30 };
+// Objectif : 100 mots par niveau 2-7. Le niveau 1 (CV sans digramme ni muette) est plafonné
+// par ses règles ; les niveaux 4-7 sont limités par le nombre d'emoji uniques et non ambigus.
+const QUOTA = { 1: 36, 2: 91, 3: 100, 4: 55, 5: 55, 6: 55, 7: 55 };
 const SMALL_LEVEL = 7; // les mots-outils ne servent que dans les phrases (niveau 7)
 
 // ── Graphèmes
@@ -23,6 +25,19 @@ for (const g of GRAPHEMES) {
   if (g.kind === 'm' && !g.key.endsWith('_')) err(`graphème ${g.key} : une muette doit finir par _`);
 }
 
+// ── Emoji : un seul graphème visuel, pictographique (ou touche numérique 0️⃣…🔟), pas de texte simple.
+const SEG = new Intl.Segmenter('fr', { granularity: 'grapheme' });
+function isSingleEmoji(img) {
+  const parts = [...SEG.segment(img)];
+  if (parts.length !== 1) return false;
+  if (/^[0-9#*]\uFE0F\u20E3$/u.test(img)) return true;
+  if (!/\p{Extended_Pictographic}/u.test(img)) return false;
+  // Un pictogramme « texte » par défaut (ex. ☂, ✂) doit porter le sélecteur emoji U+FE0F.
+  const first = String.fromCodePoint(img.codePointAt(0));
+  if (!/\p{Emoji_Presentation}/u.test(first) && !img.includes('\uFE0F') && [...img].length === 1) return false;
+  return true;
+}
+
 // ── Mots
 function checkWord(raw, i, { small = false } = {}) {
   const where = `${small ? 'SMALL_WORDS' : 'WORDS'}[${i}] « ${raw.w} »`;
@@ -34,6 +49,7 @@ function checkWord(raw, i, { small = false } = {}) {
   if (!small) {
     if (!Number.isInteger(raw.lvl) || raw.lvl < 1 || raw.lvl > 7) err(`${where} : lvl invalide`);
     if (!raw.img) err(`${where} : img manquante`);
+    else if (!isSingleEmoji(raw.img)) err(`${where} : img « ${raw.img} » n'est pas un emoji unique rendu en couleur`);
   }
   if (!raw.g) err(`${where} : g manquant`);
   if (!raw.s) err(`${where} : s manquant`);

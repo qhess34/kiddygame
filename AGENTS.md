@@ -38,7 +38,7 @@ Application web ludique d'apprentissage de la lecture en français pour un enfan
 | `js/screens/parent.js` | Espace parent protégé par code |
 | `js/data/levels.js` | 7 mondes, `STARS_TO_UNLOCK` |
 | `js/data/graphemes.js` | Progression des graphèmes (`key`, `kind`, `level`, `example`, `sound`) |
-| `js/data/words.js` | `WORDS` (≈250 mots vérifiés) |
+| `js/data/words.js` | `WORDS` (≈450 mots vérifiés) |
 | `js/data/sentences.js` | `SMALL_WORDS` (mots-outils) et `SENTENCES` (phrases du niveau 7, regroupées par `group`) |
 | `tests/validate-words.mjs` | Validation de la bibliothèque (doit passer : `node tests/validate-words.mjs`) |
 
