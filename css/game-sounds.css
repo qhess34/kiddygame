@@ -1,0 +1,21 @@
+/* Jeu « La chasse aux sons » */
+.game-sounds { display: flex; align-items: center; justify-content: center; padding: 6px 16px 14px; min-height: 0; }
+.game-sounds .snd-area { width: 100%; max-width: 1000px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(10px, 3vh, 30px); }
+.game-sounds .card { background: #fff; border-radius: 26px; box-shadow: var(--shadow); border: 0; display: flex; align-items: center; justify-content: center; }
+.game-sounds .snd-progress { display: flex; gap: 8px; font-size: clamp(18px, 3.4vh, 28px); }
+.game-sounds .snd-dot { opacity: .25; filter: grayscale(1); transition: all .3s; }
+.game-sounds .snd-dot.on { opacity: 1; filter: none; transform: scale(1.15); }
+.game-sounds .snd-top { display: flex; align-items: center; gap: 18px; }
+.game-sounds .snd-model { min-width: clamp(110px, 20vh, 170px); height: clamp(110px, 20vh, 170px); padding: 0 20px; font-size: clamp(64px, 13vh, 120px); font-weight: 700; }
+.game-sounds .snd-model-ear { background: none; box-shadow: none; }
+.game-sounds .snd-model-ear .snd-ear { width: clamp(110px, 20vh, 160px); height: clamp(110px, 20vh, 160px); font-size: clamp(54px, 10vh, 84px); }
+.game-sounds .snd-ear { width: 76px; height: 76px; font-size: 38px; }
+.game-sounds .snd-tiles { display: flex; gap: clamp(14px, 3vw, 36px); flex-wrap: wrap; justify-content: center; }
+.game-sounds .snd-tile { min-width: clamp(110px, 21vh, 180px); height: clamp(110px, 21vh, 180px); padding: 0 18px; font-size: clamp(60px, 12vh, 110px); font-weight: 700; cursor: pointer; transition: transform .15s; }
+.game-sounds .snd-tile:active, .game-sounds .snd-card:active { transform: scale(.95); }
+.game-sounds .snd-cards { display: flex; gap: clamp(12px, 2.6vw, 30px); justify-content: center; }
+.game-sounds .snd-card { flex-direction: column; gap: 6px; width: clamp(150px, 27vw, 260px); padding: clamp(10px, 2vh, 18px) 8px; cursor: pointer; }
+.game-sounds .snd-card .emoji-img { font-size: clamp(52px, 11vh, 100px); line-height: 1.1; }
+.game-sounds .snd-card .word { font-size: clamp(24px, 5vh, 44px); }
+.game-sounds .snd-ok { outline: 6px solid #6bd968; }
+.g.snd-hl { outline: 4px solid var(--digraph, #2a9d3f); outline-offset: 2px; border-radius: 10px; background: #eaffea; }

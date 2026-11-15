@@ -1,7 +1,6 @@
 // Jeu 3 — « Je découpe les syllabes » : l'enfant coupe le mot avec les ciseaux.
 // Les coupures se font sur les SYLLABES ; les couleurs restent celles des GRAPHÈMES.
-import { letterKinds, displayText } from '../core/words.js';
-import { poolForLevel } from '../core/library.js';
+import { letterKinds, displayText, concreteScript } from '../core/words.js';
 import { speak, stopSpeaking } from '../core/audio.js';
 
 const AUTO_WIN_MS = 6000;
@@ -9,9 +8,9 @@ const AUTO_WIN_MS = 6000;
 function pickWord(ctx) {
   const multi = (arr) => arr.filter((w) => w.syllables.length >= 2);
   let pool = multi(ctx.pool());
-  for (let l = ctx.level - 1; pool.length < 4 && l >= 1; l--) {
+  if (pool.length < 4) {
     const have = new Set(pool.map((w) => w.id));
-    pool = pool.concat(multi(poolForLevel(l)).filter((w) => !have.has(w.id)));
+    pool = pool.concat(multi(ctx.widePool()).filter((w) => !have.has(w.id)));
   }
   if (!pool.length) pool = multi(ctx.pool()).concat(ctx.pool());
   const picked = ctx.pick(1, pool)[0] || ctx.pickRandom(pool, 1)[0];
@@ -31,9 +30,7 @@ export default {
     const sleep = (ms) => new Promise((r) => later(r, ms));
 
     // Écriture concrète pour cette manche (mixed => au hasard, une fois).
-    let script = ctx.script;
-    if (script === 'mixed') script = Math.random() < 0.5 ? 'caps' : 'lower';
-    if (script === 'bridge') script = 'lower';
+    const script = concreteScript(ctx.script);
 
     // Prononciation (jeton : une nouvelle parole annule les séquences en cours).
     const say = (text, opts) => { seq++; return speak(text, opts); };

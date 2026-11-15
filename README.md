@@ -11,11 +11,15 @@ Elle fonctionne directement dans le navigateur (tablette, téléphone, ordinateu
 
 ## Ce qu'il contient
 - **Code couleur** (approche Céline Alvarez) : voyelles 🔴 rouges, consonnes 🔵 bleues, digrammes/trigrammes 🟢 verts (une seule unité), lettres muettes ⚫ noires.
-- **7 mondes / niveaux** : forêt des lettres → village des syllabes → montagne des digrammes → château des mots → jardin des minuscules → île du script → royaume des petits lecteurs. Un monde s'ouvre après 10 étoiles gagnées dans le précédent.
-- **Capitales puis script** : niveaux 1-4 en CAPITALES, niveau 5 découverte des minuscules (mot en script + rappel en capitales), niveau 6 en script, niveau 7 mélange + phrases. Réglable dans l'espace parent.
-- **Jeux** : Je relie (mot ↔ image, au doigt ou par touchers), Je construis le mot (digrammes = une tuile), Je découpe les syllabes, Le mot mystère (avec / sans couleurs), J'écoute et je lis, + Capitales et minuscules (niveau 5+) et Je lis des phrases (niveau 7).
+- **4 parcours, 30 mondes** (carte à onglets) :
+  - **CAPITALES** (14 mondes + révision) : voyelles et consonnes simples, puis au plus deux nouveaux digrammes par monde — ON AN → lettres muettes, È Ê → OU CH → G X Y et consonnes amies (TR, BL…) → IN AI → EU AU → OI EN → EAU GN → PH QU → ER/EZ, ET, EI, GU, ILL → sons complexes → sons rares → révision des capitales ;
+  - **script** : une lettre à la fois (capitale ↔ script), plus de lettres, mots courts, mots longs, lecture autonome (sans couleurs), consolidation ;
+  - **cursive** (vraie cursive scolaire française, police Playwrite France Moderne) : même progression, puis consolidation ;
+  - **les trois écritures** mélangées : mots et petites phrases.
+- **Mini-leçons obligatoires** : chaque nouveau graphème (et chaque lettre en script / cursive) a sa leçon en 5 étapes : je découvre en grand → j'écoute / réécoute le vrai son (jamais le nom de la lettre) → je le reconnais parmi d'autres → je le retrouve dans des mots illustrés → bravo, et « Je m'entraîne » dans un jeu. Les jeux n'utilisent que les graphèmes déjà appris. Un monde s'ouvre quand ses leçons sont faites et quelques manches gagnées.
+- **Jeux** : La chasse aux sons, Les lettres jumelles (script / cursive), Je relie (mot ↔ image, au doigt ou par touchers), Je construis le mot (digrammes = une tuile), Je découpe les syllabes, Le mot mystère (avec / sans couleurs), J'écoute et je lis, Capitales et minuscules / Le même mot, Je lis des phrases.
 - **Récompenses** : étoiles, surprises à collectionner, médailles, carte de progression, mascotte Lulu la chouette. Jamais de sanction, pas de chronomètre.
-- **Espace parent** (🔒 en haut à droite de l'accueil, code à 4 chiffres) : progression, mots travaillés, graphèmes, choix du niveau et de l'écriture, activation des graphèmes, ajout de mots, réinitialisation, sauvegarde/restauration.
+- **Espace parent** (🔒 en haut à droite de l'accueil, code à 4 chiffres) : onglet **Acquis** (suivi séparé capitales / script / cursive, statuts « À découvrir », « En cours », « À consolider », « Acquis », relancer une mini-leçon, s'entraîner sur une notion, proposer une révision des notions difficiles, choisir un apprentissage, enregistrer sa propre voix pour un son), progression, mots travaillés, graphèmes, choix de l'écriture, activation des graphèmes, ajout de mots, réinitialisation, sauvegarde/restauration.
 
 ## Ajouter des mots
 Dans l'espace parent (onglet Mots) ou dans `js/data/words.js` :
@@ -29,7 +33,7 @@ Créer `js/games/monjeu.js` en suivant le contrat décrit en tête de `js/core/g
 
 ## Architecture
 HTML/CSS/JavaScript (modules ES) sans dépendance ni étape de compilation.
-`js/core` (rendu coloré, sauvegarde, audio, animations, hôte des jeux), `js/data` (niveaux, graphèmes, mots, phrases), `js/games` (un fichier par jeu), `js/screens` (espace parent).
+`js/core` (rendu coloré, sauvegarde, acquis, sons, audio, animations, hôte des jeux), `js/data` (parcours et leçons `curriculum.js`, graphèmes, mots, phrases), `js/games` (un fichier par jeu), `js/screens` (mini-leçons, espace parent).
 
 ## Publication (GitHub Pages)
 Le workflow `.github/workflows/pages.yml` publie le site à chaque push.

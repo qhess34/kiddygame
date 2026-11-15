@@ -1,0 +1,77 @@
+/* Mini-leçons (js/screens/lesson.js) */
+
+.lesson-screen .card { background: #fff; border-radius: 26px; box-shadow: var(--shadow); border: 0; display: flex; align-items: center; justify-content: center; }
+.ls-steps { display: flex; gap: 6px; margin-right: 8px; }
+.ls-step { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.55); display: flex; align-items: center; justify-content: center; font-size: 20px; opacity: .45; transition: all .3s; }
+.ls-step.on { opacity: 1; background: #fff; transform: scale(1.18); box-shadow: 0 0 0 3px var(--world); }
+.ls-step.done { opacity: .9; background: #e9ffe5; }
+.ls-stage { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(10px, 3vh, 28px); padding: 6px 16px 16px; }
+.ls-owl { position: absolute; left: 10px; bottom: 6px; width: clamp(70px, 10vw, 110px); pointer-events: none; }
+.ls-forms { display: flex; align-items: center; gap: clamp(12px, 3vw, 34px); flex-wrap: wrap; justify-content: center; }
+.ls-form { min-width: clamp(130px, 26vh, 230px); height: clamp(130px, 26vh, 230px); padding: 0 24px; font-size: clamp(80px, 17vh, 160px); font-weight: 700; }
+.ls-form .g { line-height: 1.2; }
+.ls-forms-sm .ls-form, .ls-form-sm { min-width: clamp(80px, 14vh, 120px); height: clamp(80px, 14vh, 120px); font-size: clamp(48px, 9vh, 84px); padding: 0 14px; }
+.ls-arrow { font-size: clamp(36px, 7vh, 60px); color: var(--world); }
+.ls-hidden { visibility: hidden; }
+.ls-pop { animation: ls-pop .5s ease-out; }
+@keyframes ls-pop { 0% { transform: scale(.3); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+.ls-next { font-size: 44px; width: 110px; height: 90px; }
+.ls-listen { display: flex; align-items: center; gap: clamp(14px, 3vw, 36px); flex-wrap: wrap; justify-content: center; }
+.ls-ear { width: clamp(110px, 20vh, 170px); height: clamp(110px, 20vh, 170px); border-radius: 50%; border: 0; background: #fff; box-shadow: var(--shadow); font-size: clamp(54px, 10vh, 86px); cursor: pointer; }
+.ls-ear.ls-playing { animation: ls-pulse .8s ease-in-out infinite; box-shadow: 0 0 0 8px rgba(255,255,255,.7), var(--shadow); }
+@keyframes ls-pulse { 50% { transform: scale(1.08); } }
+.ls-example { flex-direction: column; gap: 4px; padding: 12px 22px; }
+.ls-example .emoji-img { font-size: clamp(54px, 11vh, 100px); line-height: 1.1; }
+.g.ls-hl { outline: 4px solid var(--digraph, #2a9d3f); outline-offset: 2px; border-radius: 10px; background: #eaffea; }
+.ls-mini { display: flex; gap: 8px; font-size: 22px; color: rgba(0,0,0,.2); }
+.ls-mini .on { color: #f4b400; }
+.ls-tiles { display: flex; gap: clamp(14px, 3vw, 36px); justify-content: center; flex-wrap: wrap; }
+.ls-tile { min-width: clamp(110px, 21vh, 180px); height: clamp(110px, 21vh, 180px); padding: 0 18px; font-size: clamp(56px, 12vh, 108px); font-weight: 700; cursor: pointer; }
+.ls-tile:active, .ls-card:active, .ls-gbtn:active { transform: scale(.95); }
+.ls-model { display: flex; justify-content: center; }
+.ls-ear-sm { width: 76px; height: 76px; font-size: 38px; }
+.ls-wordpick { display: flex; gap: 6px; }
+.ls-gbtn { border: 0; background: #fff; border-radius: 18px; box-shadow: var(--shadow); font-size: clamp(48px, 10vh, 90px); font-weight: 700; padding: 6px 12px; min-width: 64px; cursor: pointer; }
+.ls-cards { display: flex; gap: clamp(12px, 2.6vw, 30px); justify-content: center; }
+.ls-card { flex-direction: column; gap: 6px; width: clamp(150px, 27vw, 260px); padding: clamp(10px, 2vh, 18px) 8px; cursor: pointer; }
+.ls-card .emoji-img { font-size: clamp(52px, 11vh, 100px); line-height: 1.1; }
+.ls-card.ls-ok { outline: 6px solid #6bd968; }
+.ls-bravo { flex-direction: column; gap: clamp(6px, 1.6vh, 14px); padding: clamp(12px, 3vh, 26px) clamp(18px, 4vw, 40px); }
+.ls-bravo-owl { width: clamp(70px, 14vh, 120px); }
+.ls-bravo-stars { font-size: clamp(34px, 7vh, 56px); animation: ls-pop .6s ease-out; }
+.ls-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.ls-actions .big-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 40px; padding: 10px 18px; min-width: 120px; }
+.ls-btn-label { font-size: 16px; font-weight: 700; }
+.ls-practice { animation: ls-pulse 1.6s ease-in-out infinite; }
+
+/* Bande des leçons dans le menu d'un monde */
+.lesson-strip { display: flex; gap: 10px; padding: 14px 20px 10px; overflow-x: auto; justify-content: safe center; -webkit-overflow-scrolling: touch; flex-shrink: 0; }
+.lesson-chip { position: relative; flex-shrink: 0; border: 0; border-radius: 22px; background: #fff; box-shadow: var(--shadow); min-width: 84px; height: 84px; padding: 0 12px; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 700; cursor: pointer; }
+.lesson-chip-forms { display: flex; gap: 6px; }
+.lesson-chip-mark { position: absolute; top: -8px; right: -8px; width: 30px; height: 30px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.2); font-size: 16px; display: flex; align-items: center; justify-content: center; }
+.lesson-chip.done .lesson-chip-mark { background: #6bd968; color: #fff; }
+.lesson-chip.next { box-shadow: 0 0 0 5px #ffd23f, var(--shadow); animation: ls-pulse 1.4s ease-in-out infinite; }
+.lesson-chip.locked { opacity: .45; filter: grayscale(.6); }
+.game-tile.locked { opacity: .55; filter: grayscale(.7); }
+
+/* Carte : onglets des parcours */
+.map-tracks { display: flex; gap: 10px; justify-content: center; padding: 4px 12px 0; flex-wrap: wrap; }
+.map-track { border: 0; border-radius: 999px; background: rgba(255,255,255,.7); box-shadow: var(--shadow); padding: 8px 18px; display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; cursor: pointer; min-height: 56px; }
+.map-track.on { background: #fff; box-shadow: 0 0 0 4px #ffd23f, var(--shadow); }
+.map-track.locked { opacity: .55; }
+.map-track-emoji { font-size: 28px; }
+.map-track-label.script-cursive { font-size: 22px; }
+.map-node.done .map-node-num { background: #4caf50; }
+.map-review { position: absolute; right: 16px; bottom: 14px; font-size: 22px; background: #fff; animation: ls-pulse 1.8s ease-in-out infinite; }
+@media (max-height: 500px) {
+  .ls-step { width: 30px; height: 30px; font-size: 15px; }
+  .lesson-chip { min-width: 64px; height: 62px; font-size: 30px; }
+  .map-track { min-height: 44px; padding: 4px 12px; font-size: 16px; }
+  .map-track-emoji { font-size: 22px; }
+  .ls-owl { display: none; }
+  .ls-bravo-owl { display: none; }
+  .ls-bravo { padding: 8px 18px; }
+  .ls-actions .big-btn { font-size: 28px; padding: 6px 12px; min-width: 100px; }
+  .ls-btn-label { font-size: 13px; }
+  .ls-bravo-stars { font-size: 26px; }
+}

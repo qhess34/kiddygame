@@ -3,17 +3,25 @@ import { el, renderWord } from '../core/render.js';
 import { parseGraphemes, buildWord, VOWEL_LETTERS } from '../core/words.js';
 import { allWords, isWordActive, invalidate } from '../core/library.js';
 import {
-  getState, update, resetProgress, exportJSON, importJSON, isUnlocked, levelData, STICKERS, MEDALS,
+  getState, update, resetProgress, exportJSON, importJSON, isUnlocked, STICKERS, MEDALS,
+  isLessonDone, levelComplete, levelLessonsDone, levelRounds, nextLesson,
 } from '../core/state.js';
+import { STATUS, lessonStatus, difficultNotions, statusFromStats } from '../core/progress.js';
+import { recordedIds, saveRecording, deleteRecording, playSound, soundLesson } from '../core/sounds.js';
 import { showBreak } from '../core/breaks.js';
 import { speak, stopSpeaking, frenchVoices, hasSpeech } from '../core/audio.js';
-import { LEVELS, STARS_TO_UNLOCK } from '../data/levels.js';
+import { LEVELS, TRACKS, levelInfo } from '../data/levels.js';
+import { GRAPHEME_LESSONS, LETTER_LESSONS, lessonById, keyLevel } from '../data/curriculum.js';
 import { GRAPHEMES } from '../data/graphemes.js';
+
+// Niveaux du parcours capitales qui introduisent des graphèmes (ceux où un mot « devient lisible »).
+const CAPS_LEVELS = LEVELS.filter((L) => L.kind === 'graphemes');
 
 const AVATARS = ['🦊', '🐻', '🐰', '🐱', '🐶', '🦁', '🐼', '🐸', '🦄', '🐯', '🐨', '🐵'];
 const GAME_NAMES = {
   match: 'Je relie', build: 'Je construis', syllables: 'Les syllabes', mystery: 'Mot mystère',
   listen: 'J’écoute', cases: 'Capitales et minuscules', sentences: 'Les phrases',
+  sounds: 'Chasse aux sons', letters: 'Les lettres',
 };
 const MIN_ACTIVE_WORDS = 6;
 
@@ -189,7 +197,7 @@ export function openParentGate({ onExit } = {}) {
     showCodeCreate({
       title: 'Créez un code parent à 4 chiffres',
       sub: 'Ce code empêche l’accès à cet espace. Notez-le bien.',
-      onDone: () => showDashboard('progress'),
+      onDone: () => showDashboard('acquis'),
       onCancel: leave,
     });
   } else {
@@ -287,7 +295,7 @@ function showCodeEnter() {
   gateFrame({
     title: 'Espace parent', sub: 'Saisissez votre code à 4 chiffres.', onCancel: leave,
     onValue: (v, api) => {
-      if (v === String(getState().settings.pin)) showDashboard('progress');
+      if (v === String(getState().settings.pin)) showDashboard('acquis');
       else api.error('Ce n’est pas le bon code. Réessayez.');
     },
     extra: el('button', { class: 'pr-link', onclick: showForgot }, 'Code oublié ?'),
@@ -304,7 +312,7 @@ function showForgot() {
       if (Number(v) === a * b) {
         showCodeCreate({
           title: 'Choisissez un nouveau code', sub: 'Code parent à 4 chiffres.',
-          onDone: () => showDashboard('progress'), onCancel: showCodeEnter,
+          onDone: () => showDashboard('acquis'), onCancel: showCodeEnter,
         });
       } else api.error('Ce n’est pas la bonne réponse. Essayez encore.');
     },
@@ -315,6 +323,7 @@ function showForgot() {
 // Tableau de bord
 // ===========================================================================
 const TABS = [
+  ['acquis', '🎓 Acquis'],
   ['progress', '📈 Progression'],
   ['words-done', '📖 Mots travaillés'],
   ['graphemes', '🔤 Graphèmes'],
@@ -323,7 +332,7 @@ const TABS = [
   ['data', '💾 Données'],
 ];
 
-let currentTab = 'progress';
+let currentTab = 'acquis';
 
 function showDashboard(tab = currentTab) {
   currentTab = tab;
@@ -352,7 +361,7 @@ function showDashboard(tab = currentTab) {
 
 const section = (title, ...children) => el('section', { class: 'pr-card' }, title ? el('h2', {}, title) : null, ...children);
 const hint = (t) => el('p', { class: 'pr-hint' }, t);
-const levelName = (n) => `Niveau ${n} · ${LEVELS[n - 1].world}`;
+const levelName = (n) => `Niveau ${n} · ${levelInfo(n).world}`;
 
 function segmented(options, value, onPick, name) {
   return el('div', { class: 'pr-seg', role: 'radiogroup', 'data-name': name || null }, options.map(([v, label, sub]) => el('button', {
@@ -387,6 +396,7 @@ function graphemeStatus(s) {
 }
 
 const RENDERERS = {
+  acquis: renderAcquis,
   progress: renderProgress,
   'words-done': renderWordsDone,
   graphemes: renderGraphemes,
@@ -394,6 +404,263 @@ const RENDERERS = {
   library: renderLibrary,
   data: renderData,
 };
+
+// ---------------------------------------------------------------------------
+// Acquis : suivi séparé en capitales, script et cursive
+// ---------------------------------------------------------------------------
+let acquisScript = 'caps';
+
+const kindClass = (k) => `k-${k === 'x' || k === 'letter' ? 'c' : k}`;
+const SCRIPT_TABS = [['caps', 'CAPITALES'], ['lower', 'Script'], ['cursive', 'Cursive']];
+
+function byScript(script) {
+  return getState().stats.byScript[script] || { graphemes: {}, letters: {}, words: {} };
+}
+function lessonCounts(lesson, script) {
+  const b = byScript(script);
+  let ok = 0; let err = 0;
+  const m = lesson.kind === 'letter' ? b.letters : b.graphemes;
+  const keys = lesson.kind === 'letter' ? [lesson.letter] : lesson.keys;
+  keys.forEach((k) => { if (m[k]) { ok += m[k].ok; err += m[k].err; } });
+  return { ok, err };
+}
+function statusChip(st) {
+  return el('span', { class: `pr-status ${st}`, 'data-status': st }, `${STATUS[st].icon} ${STATUS[st].label}`);
+}
+
+// Ferme l'espace parent puis exécute une action côté enfant (leçon, jeu).
+function goApp(fn, label) {
+  if (typeof fn !== 'function') { toast(`${label} n’est pas disponible pour l’instant.`, 'bad'); return; }
+  leave();
+  setTimeout(fn, 60);
+}
+const host = () => window.__app || {};
+const openLesson = (lesson) => goApp(host().lesson && (() => host().lesson(lesson.id)), 'La leçon');
+const openPlay = (game, level, focus) => goApp(host().play && (() => host().play(game, level, { focus })), 'Le jeu');
+
+// ---- Enregistrement de la voix du parent ----
+const REC_MAX_MS = 3000;
+function recorderPanel(lesson, onChange) {
+  const sl = soundLesson(lesson);
+  const panel = el('div', { class: 'pr-rec', 'data-rec-for': sl.id });
+  const canRecord = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  panel.append(el('p', { class: 'pr-hint' }, 'Enregistrez votre voix pour faire entendre le son exact (ex. « chhh » pour CH) : il remplacera la voix de synthèse.'));
+  if (!canRecord) {
+    panel.append(el('p', { class: 'pr-warn' }, 'Enregistrement non disponible sur cet appareil'));
+    return panel;
+  }
+  const status = el('span', { class: 'pr-rec-status', 'aria-live': 'polite' });
+  const bar = el('div', { class: 'pr-actions' });
+  let recorder = null; let stream = null; let timer = null;
+  const stopStream = () => { if (stream) stream.getTracks().forEach((t) => t.stop()); stream = null; };
+  const drawBar = async () => {
+    const has = (await recordedIds()).has(sl.id);
+    bar.innerHTML = '';
+    if (recorder) {
+      bar.append(el('button', { class: 'pr-btn danger', 'data-act': 'rec-stop', onclick: () => { if (recorder && recorder.state !== 'inactive') recorder.stop(); } }, '⏹ Arrêter'));
+      return;
+    }
+    bar.append(el('button', { class: 'pr-btn primary', 'data-act': 'rec-start', onclick: start }, has ? '🎙️ Réenregistrer' : '🎙️ Enregistrer'));
+    if (has) {
+      bar.append(el('button', { class: 'pr-btn', 'data-act': 'rec-play', onclick: () => playSound(sl) }, '▶ Écouter'),
+        el('button', {
+          class: 'pr-btn danger', 'data-act': 'rec-delete',
+          onclick: async () => { await deleteRecording(sl.id); status.textContent = 'Enregistrement supprimé.'; onChange(); drawBar(); },
+        }, '🗑 Supprimer'));
+    }
+  };
+  async function start() {
+    status.textContent = '';
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      status.textContent = 'Le micro n’est pas accessible (autorisation refusée ?).';
+      return;
+    }
+    const chunks = [];
+    try { recorder = new MediaRecorder(stream); } catch (e) { stopStream(); status.textContent = 'Enregistrement non disponible sur cet appareil'; return; }
+    const rec = recorder;
+    rec.ondataavailable = (ev) => { if (ev.data && ev.data.size) chunks.push(ev.data); };
+    rec.onstop = async () => {
+      clearTimeout(timer);
+      const type = rec.mimeType || 'audio/webm';
+      recorder = null; stopStream();
+      if (chunks.length) {
+        try { await saveRecording(sl.id, new Blob(chunks, { type })); status.textContent = 'Voix enregistrée !'; onChange(); } catch (e) { status.textContent = 'Impossible de sauvegarder l’enregistrement.'; }
+      }
+      drawBar();
+    };
+    rec.start();
+    status.textContent = '🔴 Parlez maintenant (3 secondes maximum)…';
+    timer = setTimeout(() => { if (rec.state !== 'inactive') rec.stop(); }, REC_MAX_MS);
+    drawBar();
+  }
+  panel.append(bar, status);
+  drawBar();
+  return panel;
+}
+
+function markRecorded(root) {
+  recordedIds().then((ids) => {
+    root.querySelectorAll('[data-lesson]').forEach((row) => {
+      const l = lessonById(row.dataset.lesson);
+      if (!l) return;
+      const has = ids.has(soundLesson(l).id);
+      row.classList.toggle('has-rec', has);
+      const b = row.querySelector('[data-act="record"]');
+      if (b) b.textContent = has ? '🎙️ ✓' : '🎙️';
+    });
+  });
+}
+
+function renderAcquis(body, rerender) {
+  const sc = acquisScript;
+  const lessons = sc === 'caps' ? GRAPHEME_LESSONS : LETTER_LESSONS.filter((l) => l.track === sc);
+
+  body.append(section('Ce que votre enfant a appris',
+    hint('Suivi séparé pour chaque écriture : savoir lire une lettre en capitale ne suffit pas à la reconnaître en script ou en cursive.'),
+    segmented(SCRIPT_TABS, sc, (v) => { acquisScript = v; rerender(); }, 'acquis-script')));
+
+  // Compteurs
+  const notions = sc === 'caps' ? GRAPHEME_LESSONS : [...lessons, ...GRAPHEME_LESSONS];
+  const counts = { discover: 0, progress: 0, consolidate: 0, acquired: 0 };
+  notions.forEach((l) => { counts[lessonStatus(l, sc)] += 1; });
+  body.append(section('',
+    el('div', { class: 'pr-counters', 'data-counters': sc }, Object.keys(STATUS).map((k) => el('div', { class: `pr-counter ${k}`, 'data-status': k },
+      el('b', {}, String(counts[k])), el('span', {}, `${STATUS[k].icon} ${STATUS[k].label}`)))),
+    hint(sc === 'caps' ? `${notions.length} sons et graphèmes.` : `${notions.length} notions : ${lessons.length} lettres et ${GRAPHEME_LESSONS.length} sons lus dans cette écriture.`)));
+
+  if (sc === 'caps') renderCapsLessons(body);
+  else renderScriptLessons(body, sc, lessons);
+
+  renderDifficult(body, rerender);
+  renderChooser(body, rerender);
+  markRecorded(body);
+}
+
+function renderCapsLessons(body) {
+  body.append(section('Sons et graphèmes en capitales',
+    hint('« Relancer la leçon » rouvre la mini-leçon pour votre enfant ; « S’entraîner » lance le jeu des sons sur cette notion. Le micro vous permet de poser votre voix sur un son (les consonnes ne se prononcent pas bien en synthèse vocale).')));
+  CAPS_LEVELS.forEach((L) => {
+    const ls = GRAPHEME_LESSONS.filter((l) => l.level === L.n);
+    if (!ls.length) return;
+    const list = el('div', { class: 'pr-list' });
+    ls.forEach((l) => {
+      const stt = lessonStatus(l, 'caps');
+      const c = lessonCounts(l, 'caps');
+      const slot = el('div', { class: 'pr-rec-slot' });
+      list.append(el('div', { class: 'pr-arow-wrap' },
+        el('div', { class: 'pr-arow', 'data-lesson': l.id },
+          el('span', { class: `g ${kindClass(l.kind)} pr-asym script-caps` }, l.show.join(' · ').toUpperCase()),
+          statusChip(stt),
+          el('span', { class: 'pr-wscore' }, c.ok + c.err ? `${c.ok} réussi${c.ok > 1 ? 's' : ''} · ${c.err} à revoir` : (isLessonDone(l.id) ? 'leçon faite' : 'pas encore vu')),
+          el('span', { class: 'pr-abtns' },
+            el('button', { class: 'pr-btn small', 'data-act': 'relaunch', onclick: () => openLesson(l) }, '🎓 Relancer la leçon'),
+            el('button', { class: 'pr-btn small', 'data-act': 'train', onclick: () => openPlay('sounds', l.level, [l.keys[0]]) }, '🎯 S’entraîner'),
+            el('button', {
+              class: 'pr-btn small', 'data-act': 'record', 'aria-label': 'Enregistrer ma voix pour ce son',
+              onclick: () => {
+                if (slot.firstChild) { slot.innerHTML = ''; return; }
+                slot.append(recorderPanel(l, () => markRecorded(body)));
+              },
+            }, '🎙️'))),
+        slot));
+    });
+    body.append(section(`${L.emoji} ${levelName(L.n)}`, list));
+  });
+}
+
+function renderScriptLessons(body, sc, lessons) {
+  const label = sc === 'lower' ? 'script' : 'cursive';
+  const list = el('div', { class: 'pr-list' });
+  lessons.forEach((l) => {
+    const stt = lessonStatus(l, sc);
+    const c = lessonCounts(l, sc);
+    list.append(el('div', { class: 'pr-arow', 'data-lesson': l.id },
+      el('span', { class: 'pr-asym pr-trio', 'aria-label': `${l.letter} en capitale, script et cursive` },
+        el('span', { class: 'script-caps' }, l.letter.toUpperCase()), el('i', {}, '→'),
+        el('span', { class: 'script-lower' }, l.letter), el('i', {}, '→'),
+        el('span', { class: 'script-cursive' }, l.letter)),
+      statusChip(stt),
+      el('span', { class: 'pr-wscore' }, c.ok + c.err ? `${c.ok} réussi${c.ok > 1 ? 's' : ''} · ${c.err} à revoir` : (isLessonDone(l.id) ? 'leçon faite' : 'pas encore vu')),
+      el('span', { class: 'pr-abtns' },
+        el('button', { class: 'pr-btn small', 'data-act': 'relaunch', onclick: () => openLesson(l) }, '🎓 Relancer la leçon'),
+        el('button', { class: 'pr-btn small', 'data-act': 'train', onclick: () => openPlay('letters', l.level, ['L:' + l.letter]) }, '🎯 S’entraîner'))));
+  });
+  body.append(section(`Lettres en ${label}`, hint('Lettre en capitale, puis en script, puis en cursive.'), list));
+
+  const grid = el('div', { class: 'pr-ggrid pr-sgrid' });
+  GRAPHEME_LESSONS.forEach((l) => {
+    const stt = lessonStatus(l, sc);
+    const c = lessonCounts(l, sc);
+    grid.append(el('div', { class: `pr-g pr-sg ${stt}`, 'data-lesson': l.id, 'data-status': stt },
+      el('span', { class: `g ${kindClass(l.kind)} pr-g-sym script-${sc}` }, l.show.join(' · ')),
+      statusChip(stt),
+      c.ok + c.err ? el('small', { class: 'pr-g-stat' }, `${c.ok} bien · ${c.err} à revoir`) : null));
+  });
+  body.append(section(`Sons lus en ${label}`,
+    hint('Un son reste « À découvrir » tant que votre enfant ne l’a pas rencontré dans des mots écrits dans cette écriture.'), grid));
+}
+
+const focusOf = (n) => (n.type === 'letter' ? 'L:' + n.key : n.key);
+const notionLabel = (n) => (n.type === 'letter' ? `lettre ${n.key.toUpperCase()}` : n.key.replace('_', '').toUpperCase());
+
+function renderDifficult(body, rerender) {
+  const st = getState();
+  const list = difficultNotions();
+  const current = st.progress.reviewFocus || [];
+  const names = { caps: 'capitales', lower: 'script', cursive: 'cursive' };
+  const card = section('Notions difficiles',
+    hint('Les notions « À consolider » : plusieurs erreurs récentes. Vous pouvez demander à Lulu de les faire revoir à votre enfant.'));
+  if (!list.length) card.append(hint('Aucune notion difficile pour l’instant.'));
+  else {
+    card.append(el('div', { class: 'pr-chips', 'data-difficult': String(list.length) }, list.map((n) => {
+      const gl = n.type === 'letter' ? null : GRAPHEME_LESSONS.find((l) => l.keys.includes(n.key));
+      return el('span', { class: `pr-chip pr-diff g ${kindClass(gl ? gl.kind : 'c')}` }, `${notionLabel(n)} · ${names[n.script]}`);
+    })));
+  }
+  card.append(el('div', { class: 'pr-actions' },
+    el('button', {
+      class: 'pr-btn primary', 'data-act': 'propose-review', disabled: list.length ? null : true,
+      onclick: () => {
+        const focus = [...new Set(list.map(focusOf))];
+        update((s) => { s.progress.reviewFocus = focus; });
+        toast(`Révision proposée : ${focus.length} notion${focus.length > 1 ? 's' : ''} à revoir.`, 'ok');
+        rerender();
+      },
+    }, '🔁 Proposer une révision à l’enfant'),
+    current.length ? el('button', {
+      class: 'pr-btn', 'data-act': 'clear-review',
+      onclick: () => { update((s) => { s.progress.reviewFocus = []; }); toast('Révision annulée.'); rerender(); },
+    }, '✖ Annuler la révision') : null));
+  if (current.length) card.append(hint(`Révision en cours : ${current.length} notion${current.length > 1 ? 's' : ''} (${current.map((k) => String(k).replace(/^L:/, '').replace('_', '').toUpperCase()).join(', ')}).`));
+  body.append(card);
+}
+
+let chosenLevel = null;
+function renderChooser(body, rerender) {
+  const st = getState();
+  if (!chosenLevel) chosenLevel = st.progress.currentLevel || 1;
+  const L = levelInfo(chosenLevel);
+  const unlockTo = (n) => update((s) => {
+    LEVELS.filter((x) => x.n <= n).forEach((x) => { if (!s.progress.unlocked.includes(x.n)) s.progress.unlocked.push(x.n); });
+    s.progress.currentLevel = n;
+  });
+  const nl = nextLesson(chosenLevel);
+  body.append(section('Choisir un apprentissage',
+    hint('Faites travailler votre enfant sur le monde de votre choix, même s’il n’est pas encore ouvert.'),
+    levelSelect(chosenLevel, (v) => { chosenLevel = v; rerender(); }, { name: 'chooser', label: 'Choisir un niveau' }),
+    el('p', { class: 'pr-hint' }, `${L.emoji} ${L.title} · ${levelLessonsDone(L.n)} / ${L.lessons.length} leçons faites`),
+    el('div', { class: 'pr-actions' },
+      el('button', {
+        class: 'pr-btn primary', 'data-act': 'open-level',
+        onclick: () => { unlockTo(L.n); toast(`Niveau ${L.n} ouvert (et les précédents).`, 'ok'); rerender(); },
+      }, '🔓 Ouvrir ce niveau'),
+      el('button', {
+        class: 'pr-btn', 'data-act': 'next-lesson', disabled: nl ? null : true,
+        onclick: () => { unlockTo(L.n); openLesson(lessonById(nl)); },
+      }, nl ? '🎓 Lancer sa prochaine leçon' : 'Aucune leçon dans ce niveau'))));
+}
 
 // ---------------------------------------------------------------------------
 // Progression
@@ -416,22 +683,34 @@ function renderProgress(body, rerender) {
       el('div', { class: 'pr-bigstat' }, el('b', {}, '⭐ ' + st.progress.totalStars), el('small', {}, 'étoiles gagnées'))),
     avatars));
 
-  const grid = el('div', { class: 'pr-levels' });
-  LEVELS.forEach((L) => {
-    const ld = levelData(L.n);
-    const open = isUnlocked(L.n);
-    const pct = Math.min(100, Math.round((ld.stars / STARS_TO_UNLOCK) * 100));
-    const rounds = Object.entries(ld.rounds || {}).filter(([, n]) => n > 0);
-    grid.append(el('div', { class: 'pr-level' + (st.progress.currentLevel === L.n ? ' current' : ''), style: { '--c': L.color } },
-      el('div', { class: 'pr-level-top' }, el('span', { class: 'pr-level-emoji' }, L.emoji),
-        el('div', {}, el('strong', {}, `${L.n}. ${L.world}`), el('small', {}, open ? 'Monde ouvert' : 'Pas encore ouvert'))),
-      el('div', { class: 'pr-bar' }, el('span', { style: { width: pct + '%' } })),
-      el('div', { class: 'pr-level-stars' }, `⭐ ${ld.stars}`, el('small', {}, ` / ${STARS_TO_UNLOCK} pour ouvrir la suite`)),
-      el('div', { class: 'pr-level-rounds' }, rounds.length
-        ? rounds.map(([g, n]) => el('span', { class: 'pr-chip' }, `${GAME_NAMES[g] || g} · ${n} manche${n > 1 ? 's' : ''}`))
-        : el('small', {}, 'Aucune manche jouée pour l’instant'))));
+  const levelsCard = section('Les mondes', hint('Un monde s’ouvre quand toutes ses leçons sont faites et que assez de manches ont été gagnées.'));
+  TRACKS.forEach((T) => {
+    const lvls = LEVELS.filter((L) => L.track === T.id);
+    if (!lvls.length) return;
+    const grid = el('div', { class: 'pr-levels' });
+    lvls.forEach((L) => {
+      const open = isUnlocked(L.n);
+      const done = levelLessonsDone(L.n);
+      const total = L.lessons.length;
+      const rounds = levelRounds(L.n);
+      const complete = levelComplete(L.n);
+      const pct = Math.min(100, Math.round(((done + Math.min(rounds, L.need)) / Math.max(1, total + L.need)) * 100));
+      const byGame = Object.entries((st.progress.levels[L.n] && st.progress.levels[L.n].rounds) || {}).filter(([, n]) => n > 0);
+      grid.append(el('div', { class: 'pr-level' + (st.progress.currentLevel === L.n ? ' current' : '') + (open ? '' : ' locked'), 'data-level': L.n, style: { '--c': L.color } },
+        el('div', { class: 'pr-level-top' }, el('span', { class: 'pr-level-emoji' }, L.emoji),
+          el('div', {}, el('strong', {}, `${L.n}. ${L.world}`),
+            el('small', {}, complete ? '✅ Terminé' : open ? 'Monde ouvert' : '🔒 Pas encore ouvert'))),
+        el('div', { class: 'pr-bar' }, el('span', { style: { width: pct + '%' } })),
+        el('div', { class: 'pr-level-stars' },
+          total ? `🎓 ${done} / ${total} leçons` : 'Pas de leçon',
+          el('small', {}, L.need ? ` · 🎯 ${rounds} / ${L.need} manches` : '')),
+        el('div', { class: 'pr-level-rounds' }, byGame.length
+          ? byGame.map(([g, n]) => el('span', { class: 'pr-chip' }, `${GAME_NAMES[g] || g} · ${n}`))
+          : el('small', {}, 'Aucune manche jouée pour l’instant'))));
+    });
+    levelsCard.append(el('h3', { class: 'pr-track-title' }, `${T.emoji} ${T.label}`), grid);
   });
-  body.append(section('Les mondes', grid));
+  body.append(levelsCard);
 
   const days = Object.entries(st.stats.days || {}).sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 10);
   const maxDay = Math.max(1, ...days.map((d) => d[1]));
@@ -458,10 +737,19 @@ function renderProgress(body, rerender) {
 let wordsFilter = 0;
 
 function levelChips(current, onPick, withAll = true) {
-  const opts = (withAll ? [[0, 'Tous']] : []).concat(LEVELS.map((L) => [L.n, `Niv. ${L.n}`]));
+  const opts = (withAll ? [[0, 'Tous']] : []).concat(CAPS_LEVELS.map((L) => [L.n, `Niv. ${L.n}`]));
   return el('div', { class: 'pr-chips', role: 'group', 'aria-label': 'Filtrer par niveau' }, opts.map(([v, label]) => el('button', {
     class: 'pr-chipbtn' + (v === current ? ' on' : ''), 'data-level': v, onclick: () => onPick(v),
   }, label)));
+}
+
+// Pastilles par écriture (capitales / script / cursive) d'après les statistiques séparées.
+function scriptDots(id) {
+  const by = getState().stats.byScript || {};
+  return el('span', { class: 'pr-sdots' }, [['caps', 'A', 'capitales'], ['lower', 'a', 'script'], ['cursive', 'a', 'cursive']].map(([sc, ch, lab]) => {
+    const st = statusFromStats(by[sc] && by[sc].words && by[sc].words[id]) || 'discover';
+    return el('span', { class: `pr-sdot ${st} script-${sc}`, title: `${lab} : ${STATUS[st].label}` }, STATUS[st].icon, ' ', ch);
+  }));
 }
 
 function renderWordsDone(body, rerender) {
@@ -489,6 +777,7 @@ function renderWordsDone(body, rerender) {
       el('span', { class: 'pr-wimg' }, r.w.img),
       el('span', { class: 'pr-wword' }, renderWord(r.w, { script: 'caps', size: 'sm' })),
       el('span', { class: 'pr-wlvl' }, `Niv. ${r.w.level}`),
+      scriptDots(r.w.id),
       el('span', { class: 'pr-wscore' }, `${r.s.ok} réussi${r.s.ok > 1 ? 's' : ''} sur ${r.s.ok + r.s.err}`),
       el('span', { class: `pr-badge ${r.st.id}` }, r.st.label)));
   });
@@ -524,8 +813,8 @@ function renderGraphemes(body, rerender) {
   const wrapper = section('Graphèmes par niveau',
     hint('Un graphème est une lettre ou un groupe de lettres qui fait un son. Désactivez ceux que votre enfant n’a pas encore vus : les mots qui les contiennent ne seront plus proposés.'));
   body.append(wrapper);
-  LEVELS.forEach((L) => {
-    const gs = GRAPHEMES.filter((g) => g.level === L.n);
+  CAPS_LEVELS.forEach((L) => {
+    const gs = GRAPHEMES.filter((g) => keyLevel(g.key) === L.n);
     const { n, total } = activeCount(L.n);
     const low = n < MIN_ACTIVE_WORDS;
     const head = el('div', { class: 'pr-ghead' },
@@ -570,11 +859,22 @@ function renderGraphemes(body, rerender) {
 // ---------------------------------------------------------------------------
 const SCRIPT_OPTS = [
   ['auto', 'Automatique', 'selon le niveau'],
-  ['caps', 'Capitales', ''],
-  ['bridge', 'Découverte des minuscules', 'avec rappel en capitales'],
+  ['caps', 'CAPITALES', ''],
   ['lower', 'Script', 'minuscules'],
-  ['mixed', 'Mélange', ''],
+  ['cursive', 'Cursive', 'attachée'],
+  ['mixed', 'Mélange', 'les 3 écritures'],
 ];
+
+// Menu déroulant des niveaux, regroupés par parcours.
+function levelSelect(value, onPick, { name, label = 'Niveau' } = {}) {
+  return el('select', {
+    class: 'pr-input pr-levelselect', 'aria-label': label, 'data-name': name || null,
+    onchange: (e) => onPick(Number(e.target.value)),
+  }, TRACKS.map((T) => {
+    const lvls = LEVELS.filter((L) => L.track === T.id);
+    return lvls.length ? el('optgroup', { label: `${T.emoji} ${T.label}` }, lvls.map((L) => el('option', { value: L.n, selected: L.n === value ? true : null }, `${L.n}. ${L.emoji} ${L.world}`))) : null;
+  }));
+}
 
 function previewWord() {
   const lib = allWords();
@@ -589,14 +889,14 @@ function renderSettings(body, rerender) {
 
   body.append(section('Niveau de jeu',
     hint('Choisissez le monde où votre enfant reprend la partie.'),
-    segmented(LEVELS.map((L) => [L.n, `${L.n}`, L.emoji]), st.progress.currentLevel, (v) => { update((x) => { x.progress.currentLevel = Number(v); }); rerender(); }, 'level'),
+    levelSelect(st.progress.currentLevel, (v) => { update((x) => { x.progress.currentLevel = v; }); rerender(); }, { name: 'level', label: 'Niveau en cours' }),
     el('p', { class: 'pr-hint' }, levelName(st.progress.currentLevel)),
     switchRow('Débloquer tous les niveaux', 'Tous les mondes sont ouverts, sans attendre les étoiles.', !!s.unlockAll, (v) => set((x) => { x.unlockAll = v; }), 'unlockAll')));
 
   // Écriture
   const scriptNow = s.script || 'auto';
   const cur = st.progress.currentLevel;
-  const concrete = scriptNow === 'auto' ? LEVELS[cur - 1].script : scriptNow;
+  const concrete = scriptNow === 'auto' ? levelInfo(cur).script : scriptNow;
   const pw = previewWord();
   const preview = el('div', { class: 'pr-preview', 'data-script': concrete, 'aria-label': 'Aperçu de l’écriture' },
     renderWord(pw, { script: concrete, colors: s.colors !== 'off', size: 'lg' }),
@@ -604,7 +904,7 @@ function renderSettings(body, rerender) {
   body.append(section('Écriture',
     segmented(SCRIPT_OPTS, scriptNow, (v) => set((x) => { x.script = v; }), 'script'),
     scriptNow === 'auto'
-      ? hint('Automatique : capitales aux niveaux 1 à 4, découverte des minuscules au niveau 5, script au niveau 6, mélange au niveau 7.')
+      ? hint('Automatique : capitales d’abord, puis script, puis cursive, puis les trois écritures mélangées, selon le parcours du niveau en cours.')
       : hint('Cette écriture est utilisée à tous les niveaux.'),
     preview,
     hint(scriptNow === 'auto' ? `Aperçu pour le niveau ${cur}.` : 'Aperçu en direct.'),
@@ -699,7 +999,7 @@ function renderLibrary(body, rerender) {
     hint('Masquez un mot pour qu’il ne soit plus proposé dans les jeux ; vous pourrez le réafficher à tout moment.'),
     levelChips(libFilter, (v) => { libFilter = v; rerender(); })));
 
-  LEVELS.forEach((L) => {
+  CAPS_LEVELS.forEach((L) => {
     if (libFilter && libFilter !== L.n) return;
     const words = lib.filter((w) => w.level === L.n);
     if (!words.length) return;
@@ -730,11 +1030,11 @@ function renderLibrary(body, rerender) {
 }
 
 function addWordForm(rerender) {
-  const state = { w: '', img: '', lvl: getState().progress.currentLevel || 1, g: '', s: '', gTouched: false, sTouched: false };
+  const state = { w: '', img: '', lvl: Math.min(getState().progress.currentLevel || 1, CAPS_LEVELS.length), g: '', s: '', gTouched: false, sTouched: false };
   const inW = el('input', { class: 'pr-input', id: 'aw-word', type: 'text', placeholder: 'ex. bateau', autocomplete: 'off', autocapitalize: 'none', autocorrect: 'off', spellcheck: 'false', 'aria-label': 'Mot en minuscules' });
   const inImg = el('input', { class: 'pr-input emoji', id: 'aw-emoji', type: 'text', placeholder: '🚢', autocomplete: 'off', 'aria-label': 'Emoji' });
   const inLvl = el('select', { class: 'pr-input', id: 'aw-level', 'aria-label': 'Niveau' },
-    LEVELS.map((L) => el('option', { value: L.n, selected: L.n === state.lvl ? true : null }, `${L.n} · ${L.world}`)));
+    CAPS_LEVELS.map((L) => el('option', { value: L.n, selected: L.n === state.lvl ? true : null }, `${L.n} · ${L.world}`)));
   const inG = el('input', { class: 'pr-input mono', id: 'aw-graphemes', type: 'text', placeholder: 'b a t eau', autocomplete: 'off', autocapitalize: 'none', autocorrect: 'off', spellcheck: 'false', 'aria-label': 'Graphèmes' });
   const inS = el('input', { class: 'pr-input mono', id: 'aw-syllables', type: 'text', placeholder: 'ba-teau', autocomplete: 'off', autocapitalize: 'none', autocorrect: 'off', spellcheck: 'false', 'aria-label': 'Syllabes' });
   const prevBox = el('div', { class: 'pr-aw-preview', 'aria-live': 'polite' });

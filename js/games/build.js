@@ -1,6 +1,6 @@
 // Jeu « Je construis le mot » : reconstituer un mot (image donnée) avec des tuiles
 // (graphèmes ou syllabes), en glissant ou en touchant.
-import { letterKinds, displayText } from '../core/words.js';
+import { letterKinds, displayText, concreteScript } from '../core/words.js';
 
 const DRAG_THRESHOLD = 12;
 let lastMode = 'letters';
@@ -26,7 +26,7 @@ export default {
 
   start(root, ctx) {
     const { el } = ctx;
-    const level = ctx.level;
+    const level = ctx.stage;
     const setMode = ctx.settings.buildMode || 'auto';
 
     // ---- choix du mot ----
@@ -50,9 +50,7 @@ export default {
     lastMode = mode;
 
     // écriture de la manche (une seule par manche)
-    let script = ctx.script;
-    if (script === 'mixed') script = Math.random() < 0.5 ? 'caps' : 'lower';
-    else if (script === 'bridge') script = 'lower';
+    const script = concreteScript(ctx.script);
 
     const needed = unitsOf(word, mode);
 
@@ -85,7 +83,7 @@ export default {
       if (u.g) return ctx.renderGrapheme(u.g, { script });
       const wrap = el('span', { class: 'b-syl' });
       [...u.text].forEach((ch, i) => {
-        wrap.append(el('span', { class: `g k-${u.kinds[i]} ${ctx.colors ? '' : 'no-colors'}` }, displayText(ch, script)));
+        wrap.append(el('span', { class: `g k-${u.kinds[i]} ${ctx.colors ? '' : 'no-colors'} script-${script}` }, displayText(ch, script)));
       });
       return wrap;
     }

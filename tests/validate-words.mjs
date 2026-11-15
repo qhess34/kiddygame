@@ -4,15 +4,17 @@ import { WORDS } from '../js/data/words.js';
 import { GRAPHEMES } from '../js/data/graphemes.js';
 import { SMALL_WORDS, SENTENCES } from '../js/data/sentences.js';
 import { buildWord } from '../js/core/words.js';
+import { LEVELS, LESSONS, GRAPHEME_LESSONS, lessonForKey, keyLevel } from '../js/data/curriculum.js';
 
 const errors = [];
 const warnings = [];
 const err = (m) => errors.push(m);
 
-// Objectif : 100 mots par niveau 2-7. Le niveau 1 (CV sans digramme ni muette) est plafonné
-// par ses règles ; les niveaux 4-7 sont limités par le nombre d'emoji uniques et non ambigus.
-const QUOTA = { 1: 36, 2: 91, 3: 100, 4: 55, 5: 55, 6: 55, 7: 55 };
-const SMALL_LEVEL = 7; // les mots-outils ne servent que dans les phrases (niveau 7)
+// Le niveau d'un mot est CALCULÉ (data/curriculum.js) : premier niveau du parcours capitales où
+// tous ses graphèmes ont eu leur mini-leçon. Minimum de mots lisibles par niveau de capitales :
+const CAPS_LEVELS = LEVELS.filter((l) => l.kind === 'graphemes');
+const QUOTA = Object.fromEntries(CAPS_LEVELS.map((l) => [l.n, l.n === 1 ? 6 : 10]));
+const SMALL_LEVEL = 99; // les mots-outils ne servent que dans les phrases (niveau final)
 
 // ── Graphèmes
 const G = new Map();
@@ -20,7 +22,8 @@ for (const g of GRAPHEMES) {
   if (G.has(g.key)) err(`graphème en double : ${g.key}`);
   G.set(g.key, g);
   if (!['v', 'c', 'd', 'm'].includes(g.kind)) err(`graphème ${g.key} : kind invalide « ${g.kind} »`);
-  if (!(g.level >= 1 && g.level <= 7)) err(`graphème ${g.key} : niveau invalide`);
+  if (!lessonForKey(g.key)) err(`graphème ${g.key} : aucune mini-leçon dans curriculum.js`);
+  else if (g.level !== keyLevel(g.key)) err(`graphème ${g.key} : level ${g.level} ≠ niveau de sa leçon (${keyLevel(g.key)})`);
   if (!g.label || !g.sound) err(`graphème ${g.key} : label ou sound manquant`);
   if (g.kind === 'm' && !g.key.endsWith('_')) err(`graphème ${g.key} : une muette doit finir par _`);
 }
@@ -42,12 +45,11 @@ function isSingleEmoji(img) {
 function checkWord(raw, i, { small = false } = {}) {
   const where = `${small ? 'SMALL_WORDS' : 'WORDS'}[${i}] « ${raw.w} »`;
   const w = buildWord(raw, i);
-  const lvl = small ? SMALL_LEVEL : raw.lvl;
+  const lvl = small ? SMALL_LEVEL : w.level;
   if (w.errors.length) w.errors.forEach((e) => err(`${where} : ${e} (mot rejeté par buildWord)`));
   if (raw.w !== raw.w.toLowerCase() || raw.w !== raw.w.trim()) err(`${where} : doit être en minuscules sans espace`);
   if (/[\s'’-]/.test(raw.w)) err(`${where} : pas d'espace, d'apostrophe ni de trait d'union`);
   if (!small) {
-    if (!Number.isInteger(raw.lvl) || raw.lvl < 1 || raw.lvl > 7) err(`${where} : lvl invalide`);
     if (!raw.img) err(`${where} : img manquante`);
     else if (!isSingleEmoji(raw.img)) err(`${where} : img « ${raw.img} » n'est pas un emoji unique rendu en couleur`);
   }
@@ -56,11 +58,8 @@ function checkWord(raw, i, { small = false } = {}) {
   for (const g of w.graphemes) {
     const def = G.get(g.key);
     if (!def) { err(`${where} : graphème « ${g.key} » absent de GRAPHEMES`); continue; }
-    if (def.level > lvl) err(`${where} (niveau ${lvl}) : utilise « ${g.key} » introduit au niveau ${def.level}`);
     if (g.k !== 'm' && def.kind !== 'm' && g.k !== def.kind && g.key !== 'y') err(`${where} : « ${g.key} » de type ${g.k} ≠ ${def.kind} dans GRAPHEMES`);
   }
-  if (lvl === 1 && w.graphemes.some((g) => g.k === 'm')) err(`${where} : lettre muette interdite au niveau 1`);
-  if (lvl <= 2 && w.graphemes.some((g) => g.k === 'd')) err(`${where} : digramme interdit aux niveaux 1-2`);
   if (raw.ssay) {
     if (!Array.isArray(raw.ssay)) err(`${where} : ssay doit être un tableau`);
     else if (raw.ssay.length !== w.syllables.length) err(`${where} : ssay (${raw.ssay.length}) ≠ syllabes (${w.syllables.length})`);
@@ -102,11 +101,25 @@ for (const g of GRAPHEMES) {
 }
 const used = new Set([...words, ...smalls].flatMap((w) => w.skills));
 for (const g of GRAPHEMES) if (!used.has(g.key)) warnings.push(`graphème ${g.key} jamais utilisé`);
-// Le niveau d'un graphème doit correspondre à sa première apparition (sinon la progression ment).
-for (const g of GRAPHEMES) {
-  const lv = words.filter((w) => w.skills.includes(g.key)).map((w) => w.level);
-  const first = lv.length ? Math.min(...lv) : SMALL_LEVEL;
-  if (first !== g.level) warnings.push(`graphème ${g.key} : niveau ${g.level} mais premier mot au niveau ${first}`);
+// ── Mini-leçons
+const lessonIds = new Set();
+for (const l of LESSONS) {
+  if (lessonIds.has(l.id)) err(`leçon en double : ${l.id}`);
+  lessonIds.add(l.id);
+  if (l.kind !== 'm' && l.kind !== 'letter' && !l.say && !l.syl && !l.words) err(`leçon ${l.id} : aucun son (say / syl / words)`);
+}
+for (const L of LEVELS) for (const id of L.lessons) if (!lessonIds.has(id)) err(`niveau ${L.id} : leçon inconnue ${id}`);
+// Chaque leçon de graphème doit avoir des mots illustrés qui le contiennent (étape 4).
+// « un » n'existe que comme mot-outil (pas d'image) : l'étape 4 est alors sautée.
+for (const l of GRAPHEME_LESSONS) {
+  const n = words.filter((w) => l.keys.some((k) => (k === 'cluster' ? w.cluster : w.skills.includes(k)))).length;
+  if (n < 1 && l.id !== 'g:un') err(`leçon ${l.id} : aucun mot illustré`);
+  else if (n < 2) warnings.push(`leçon ${l.id} : ${n} mot illustré seulement`);
+}
+// Au plus deux nouveaux digrammes par niveau (sauf les deux mondes des sons complexes / rares).
+for (const L of CAPS_LEVELS) {
+  const d = L.lessons.map((id) => LESSONS.find((x) => x.id === id)).filter((x) => x.kind === 'd');
+  if (d.length > 2 && !['c13', 'c14', 'c12'].includes(L.id)) err(`niveau ${L.id} : ${d.length} digrammes nouveaux (max 2)`);
 }
 
 // ── Phrases
@@ -119,7 +132,7 @@ SENTENCES.forEach((s, i) => {
   for (const tok of s.text.split(' ')) if (!byText.has(tok)) err(`${where} : mot « ${tok} » absent de WORDS et SMALL_WORDS`);
   const n = [...new Intl.Segmenter('fr', { granularity: 'grapheme' }).segment(s.img || '')].length;
   if (n < 1 || n > 3) err(`${where} : img doit contenir 1 à 3 emoji (${n})`);
-  if (s.lvl !== 7) err(`${where} : lvl doit être 7`);
+  if (s.lvl !== 7) err(`${where} : lvl doit être 7 (difficulté du niveau final)`);
   if (!s.group) err(`${where} : group manquant`);
   else { if (!groups.has(s.group)) groups.set(s.group, []); groups.get(s.group).push(s); }
 });
@@ -134,11 +147,11 @@ const allImgs = SENTENCES.map((s) => s.img);
 if (new Set(allImgs).size !== allImgs.length) warnings.push('deux phrases de groupes différents partagent la même image');
 
 // ── Résumé
-console.log('Mots par niveau :');
-for (let l = 1; l <= 7; l++) console.log(`  niveau ${l} : ${perLevel[l] || 0} mots (min ${QUOTA[l]})`);
+console.log('Nouveaux mots lisibles par niveau (parcours capitales) :');
+for (const L of CAPS_LEVELS) console.log(`  ${L.id} ${L.world} : ${perLevel[L.n] || 0} mots (min ${QUOTA[L.n]})`);
 console.log(`  total : ${words.length} mots, ${smalls.length} mots-outils, ${SENTENCES.length} phrases en ${groups.size} groupes`);
-console.log('Graphèmes par niveau :');
-for (let l = 1; l <= 7; l++) console.log(`  niveau ${l} : ${GRAPHEMES.filter((g) => g.level === l).map((g) => g.key).join(' ')}`);
+console.log('Leçons par niveau :');
+for (const L of LEVELS) if (L.lessons.length) console.log(`  ${L.id} : ${L.lessons.map((id) => id.split(':')[1]).join(' ')}`);
 warnings.forEach((w) => console.log('⚠ ' + w));
 if (errors.length) {
   console.error(`\n✗ ${errors.length} erreur(s) :`);

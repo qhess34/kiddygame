@@ -17,7 +17,7 @@ export function useColors(ctx) {
   const mode = (ctx.settings && ctx.settings.mysteryColors) || 'auto';
   if (mode === 'on') return true;
   if (mode === 'off') return false;
-  if (ctx.level <= 1) return true;
+  if (ctx.stage <= 1) return true;
   const r = ctx.round;
   if (r < 2) return true;
   return (r - 2) % 2 !== 0;      // manche 2 : sans, 3 : avec, 4 : sans…
@@ -48,7 +48,7 @@ export default {
   start(root, ctx) {
     const { el } = ctx;
     const colors = useColors(ctx);
-    const hard = hardFor(ctx.level);
+    const hard = hardFor(ctx.stage);
     const targets = ctx.pick(QUESTIONS, ctx.pool());
     const timers = new Set();
     let destroyed = false, won = false, qi = 0, locked = false, helps = 0;

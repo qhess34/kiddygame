@@ -45,12 +45,12 @@ export default {
     const timers = new Set();
     let dead = false; let won = false; let token = 0;
     const later = (fn, ms) => { const t = setTimeout(() => { timers.delete(t); if (!dead) fn(); }, ms); timers.add(t); return t; };
-    const script = ctx.settings && ctx.settings.script === 'caps' ? 'caps' : 'lower';
+    const script = ctx.script === 'bridge' ? 'lower' : ctx.script === 'cbridge' ? 'cursive' : ctx.script;
     const area = el('div', { class: 'sent-area' });
     root.append(area);
     if (!all.length) { area.append(el('p', {}, 'Pas de phrases pour le moment.')); later(() => { if (!won) { won = true; ctx.win(); } }, 800); return { destroy() { dead = true; } }; }
 
-    const allowed = all.filter((s) => s.lvl <= ctx.level);
+    const allowed = all.filter((s) => s.lvl <= ctx.stage);
     const pool = allowed.length ? allowed : all;
     // 3 phrases cibles, images et textes distincts.
     const targets = [];

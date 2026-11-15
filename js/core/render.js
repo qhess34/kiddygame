@@ -1,6 +1,7 @@
 // Rendu des mots avec le code couleur pédagogique.
 //   rouge = voyelle (v), bleu = consonne (c), vert = digramme/trigramme (d), noir = muette (m)
-import { displayText, letterKinds } from './words.js';
+import { displayText, letterKinds, concreteScript } from './words.js';
+export { concreteScript };
 
 export function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -23,17 +24,10 @@ export function el(tag, attrs = {}, ...children) {
   return node;
 }
 
-// Résout l'écriture concrète d'un mot ('mixed' -> caps ou lower au hasard, stable par mot+manche).
-export function concreteScript(script) {
-  if (script === 'mixed') return Math.random() < 0.5 ? 'caps' : 'lower';
-  if (script === 'bridge') return 'lower';
-  return script;
-}
-
 /**
  * Rend un mot colorié.
  * @param word    objet mot (voir core/words.js)
- * @param opts.script  'caps' | 'lower' | 'bridge' | 'mixed'
+ * @param opts.script  'caps' | 'lower' | 'cursive' | 'bridge' | 'cbridge' | 'mixed'
  * @param opts.colors  true/false — false = tout en gris foncé (lecture autonome)
  * @param opts.size    'sm' | 'md' | 'lg' | 'xl'
  * @param opts.bridge  force l'affichage du rappel en capitales sous le mot
@@ -64,9 +58,11 @@ export function renderWord(word, opts = {}) {
     }
   }
 
-  if (opts.bridge || script === 'bridge') {
+  if (opts.bridge || script === 'bridge' || script === 'cbridge') {
+    // Rappel sous le mot : en capitales (découverte du script) ou en script (découverte de la cursive).
+    const under = script === 'cbridge' || shown === 'cursive' ? 'lower' : 'caps';
     const box = el('span', { class: `word-bridge word-${size}` });
-    box.append(wrap, el('span', { class: 'bridge-caps', 'aria-hidden': 'true' }, displayText(word.text, 'caps')));
+    box.append(wrap, el('span', { class: `bridge-caps script-${under}`, 'aria-hidden': 'true' }, displayText(word.text, under)));
     return box;
   }
   return wrap;
@@ -75,21 +71,23 @@ export function renderWord(word, opts = {}) {
 // Rend un graphème isolé (tuile du jeu "Je construis le mot").
 export function renderGrapheme(g, script, colors = true) {
   const shown = concreteScript(script);
-  return el('span', { class: `g k-${g.k} ${colors ? '' : 'no-colors'}` }, displayText(g.t, shown));
+  return el('span', { class: `g k-${g.k} ${colors ? '' : 'no-colors'} script-${shown}` }, displayText(g.t, shown));
 }
 
 // Rend une phrase : tableau de mots (objets mot) + ponctuation finale.
 export function renderSentence(words, { script = 'lower', colors = true, punct = '.' } = {}) {
-  const line = el('span', { class: 'sentence' });
+  script = concreteScript(script); // une seule écriture par phrase
+  const ws = script === 'caps' ? 'caps' : script;
+  const line = el('span', { class: `sentence script-${ws}` });
   words.forEach((w, i) => {
     let node;
     if (i === 0 && script !== 'caps') {
       // Majuscule en début de phrase : on garde la couleur du premier graphème.
-      node = renderWord(w, { script: 'lower', colors, size: 'md' });
+      node = renderWord(w, { script: ws, colors, size: 'md' });
       const first = node.querySelector('.g');
       if (first) first.textContent = first.textContent.charAt(0).toLocaleUpperCase('fr-FR') + first.textContent.slice(1);
     } else {
-      node = renderWord(w, { script: script === 'caps' ? 'caps' : 'lower', colors, size: 'md' });
+      node = renderWord(w, { script: ws, colors, size: 'md' });
     }
     line.append(node);
   });

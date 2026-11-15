@@ -3,6 +3,8 @@
 import { WORDS } from '../data/words.js';
 import { buildWord, shuffle } from './words.js';
 import { getState, save } from './state.js';
+import { levelInfo } from '../data/curriculum.js';
+import { allowedKeys, learnedLetters } from './progress.js';
 
 let cache = null;
 let cacheKey = '';
@@ -25,20 +27,51 @@ export function isWordActive(word) {
   return !word.skills.some((k) => disabledGraphemes.includes(k));
 }
 
-// Mots disponibles pour jouer au niveau `level` :
-// surtout les mots du niveau, plus quelques mots des niveaux précédents en révision.
-export function poolForLevel(level, { reviewRatio = 0.3, min = 6 } = {}) {
+const dedupe = (arr) => { const seen = new Set(); return arr.filter((w) => (seen.has(w.text) ? false : seen.add(w.text))); };
+const plain = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+// Le mot contient-il cette notion ? (clé de graphème, 'cluster', ou lettre 'L:a')
+export function wordHas(w, key) {
+  if (key.startsWith('L:')) return plain(w.text).includes(key.slice(2));
+  if (key === 'cluster') return !!w.cluster;
+  return w.skills.includes(key);
+}
+
+// Tous les mots lisibles au niveau `level` (selon les leçons faites).
+export function widePool(level) {
+  const L = levelInfo(level);
   const active = allWords().filter(isWordActive);
-  const current = active.filter((w) => w.level === level);
-  const previous = active.filter((w) => w.level < level);
-  let pool = current.slice();
-  const nReview = Math.round(current.length * reviewRatio);
-  pool = pool.concat(shuffle(previous).slice(0, nReview));
-  if (pool.length < min) pool = pool.concat(shuffle(previous).slice(0, min - pool.length));
-  if (pool.length < min) pool = active.filter((w) => w.level <= level);
-  // Évite les doublons (même texte) et les images en double.
-  const seen = new Set();
-  return pool.filter((w) => (seen.has(w.text) ? false : seen.add(w.text)));
+  const allowed = allowedKeys(level);
+  if (allowed) return active.filter((w) => w.skills.every((k) => allowed.keys.has(k)) && (!w.cluster || allowed.keys.has('cluster')));
+  if (L.kind === 'letters') {
+    // Mots courts dont toutes les lettres ont été apprises dans cette écriture (sinon : mots courts).
+    const known = new Set(learnedLetters(level));
+    const short = active.filter((w) => w.text.length <= 5);
+    const ok = short.filter((w) => [...plain(w.text)].every((c) => known.has(c)));
+    return ok.length >= 6 ? ok : short;
+  }
+  if (L.kind === 'short') return active.filter((w) => w.text.length <= 5 && w.syllables.length <= 2);
+  if (L.kind === 'long') return active.filter((w) => w.text.length >= 6);
+  return active;
+}
+
+// Mots proposés pour jouer au niveau `level` : surtout ceux qui contiennent les graphèmes
+// du niveau (nouveautés), plus des mots déjà connus en révision.
+// focus : liste de notions à travailler (leçon, révision des notions difficiles).
+export function poolForLevel(level, { focus = null, min = 3 } = {}) {
+  const wide = widePool(level);
+  let pool = wide;
+  const allowed = allowedKeys(level);
+  if (allowed && allowed.fresh.size) {
+    const fresh = wide.filter((w) => w.skills.some((k) => allowed.fresh.has(k)) || (w.cluster && allowed.fresh.has('cluster')));
+    const rest = shuffle(wide.filter((w) => !fresh.includes(w)));
+    pool = fresh.concat(rest.slice(0, Math.max(Math.round(fresh.length * 0.5), 8 - fresh.length)));
+  }
+  if (focus && focus.length) {
+    const f = wide.filter((w) => focus.some((k) => wordHas(w, k)));
+    if (f.length >= min) pool = f.concat(shuffle(wide.filter((w) => !f.includes(w))).slice(0, Math.ceil(f.length / 3)));
+  }
+  return dedupe(pool.length >= min ? pool : wide);
 }
 
 // Choisit n mots (images distinctes) en variant le plus possible :

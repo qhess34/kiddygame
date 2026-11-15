@@ -36,7 +36,7 @@ export default {
 
   start(root, ctx) {
     const { el } = ctx;
-    const hard = hardFor(ctx.level);
+    const hard = hardFor(ctx.stage);
     const targets = ctx.pick(QUESTIONS, ctx.pool());
     const timers = new Set();
     let destroyed = false, won = false, qi = 0, locked = false, target = null, first = true;

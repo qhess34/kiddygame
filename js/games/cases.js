@@ -39,8 +39,8 @@ export default {
     function presentation(word, next) {
       clear();
       area.className = 'cases-area cases-t1';
-      const caps = ctx.renderWord(word, { script: 'caps', size: 'xl' });
-      const low = ctx.renderWord(word, { script: 'lower', size: 'xl' });
+      const caps = ctx.renderWord(word, { script: ctx.pair[0], size: 'xl' });
+      const low = ctx.renderWord(word, { script: ctx.pair[1], size: 'xl' });
       const lowGs = [...low.querySelectorAll('.g')];
       lowGs.forEach((g) => g.classList.add('c1-hidden'));
       const capGs = [...caps.querySelectorAll('.g')];
@@ -78,8 +78,8 @@ export default {
         area.className = 'cases-area cases-t3';
         const target = (q === 0 && first) ? first : ctx.pick(1)[0];
         const opts = distinctOptions(ctx, target);
-        const fromScript = reverse ? 'lower' : 'caps';
-        const toScript = reverse ? 'caps' : 'lower';
+        const fromScript = reverse ? ctx.pair[1] : ctx.pair[0];
+        const toScript = reverse ? ctx.pair[0] : ctx.pair[1];
         let locked = false;
         const choices = el('div', { class: 'cases-choices' });
         ctx.shuffle(opts).forEach((w) => {
@@ -121,8 +121,8 @@ export default {
         const g = ctx.renderGrapheme({ t: l, k: kind }, { script });
         return el('button', { class: `cases-card cases-${side}`, 'data-letter': l, 'data-side': side, 'aria-label': l }, g);
       };
-      const top = el('div', { class: 'cases-lrow' }, letters.map((l) => mk(l, 'caps', 'cap')));
-      const bot = el('div', { class: 'cases-lrow' }, ctx.shuffle(letters).map((l) => mk(l, 'lower', 'low')));
+      const top = el('div', { class: 'cases-lrow' }, letters.map((l) => mk(l, ctx.pair[0], 'cap')));
+      const bot = el('div', { class: 'cases-lrow' }, ctx.shuffle(letters).map((l) => mk(l, ctx.pair[1], 'low')));
       const svg = document.createElementNS(SVGNS, 'svg');
       svg.setAttribute('class', 'cases-svg');
       area.append(top, bot, svg);
@@ -142,7 +142,9 @@ export default {
       const attempt = (a, b) => {
         const cap = a.dataset.side === 'cap' ? a : b; const low = cap === a ? b : a;
         unsel();
-        if (cap.dataset.letter === low.dataset.letter) {
+        const okPair = cap.dataset.letter === low.dataset.letter;
+        if (ctx.recordLetter) ctx.recordLetter(cap.dataset.letter, okPair);
+        if (okPair) {
           cap.classList.add('cases-ok'); low.classList.add('cases-ok');
           cap.disabled = true; low.disabled = true;
           setLine(mkLine('cases-line cases-line-ok'), rel(cap), rel(low));
@@ -215,8 +217,9 @@ export default {
 };
 
 function typeFor(ctx) {
+  if (ctx.forceType) return ctx.forceType;
   // Niveau 5 : on commence par le type 1.
-  return ((ctx.round + Math.max(0, ctx.level - 5)) % 3) + 1;
+  return ((ctx.round + Math.max(0, ctx.stage - 5)) % 3) + 1;
 }
 
 // 3 mots distincts (texte et image) : la cible + 2 distracteurs.
@@ -229,7 +232,20 @@ export function distinctOptions(ctx, target) {
 }
 
 export function chooseLetters(ctx) {
-  const early = ctx.level === 5 && ctx.round < 4;
+  // Jeu « Les lettres jumelles » : seulement les lettres apprises, de plus en plus nombreuses.
+  if (ctx.letterSet) {
+    const set = ctx.letterSet;
+    const n = Math.min(4, set.length, Math.max(1, Math.ceil(set.length / 2)));
+    const focus = (ctx.focus || []).filter((k) => k.startsWith('L:')).map((k) => k.slice(2)).filter((l) => set.includes(l));
+    const recent = set.slice(-3); // les dernières lettres apprises reviennent plus souvent
+    const chosen = [];
+    for (const l of [...focus, ...ctx.shuffle(recent), ...ctx.shuffle(set)]) {
+      if (chosen.length >= n) break;
+      if (!chosen.includes(l)) chosen.push(l);
+    }
+    return ctx.shuffle(chosen);
+  }
+  const early = ctx.stage === 5 && ctx.round < 4;
   const n = ctx.round < 2 ? 3 : 4;
   const seen = new Set();
   ctx.pool().forEach((w) => baseLetters(w).forEach((l) => seen.add(l)));

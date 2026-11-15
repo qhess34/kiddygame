@@ -1,4 +1,5 @@
 // Analyse et requêtes sur la bibliothèque de mots.
+import { hasCluster, wordCapsLevel } from '../data/curriculum.js';
 //
 // FORMAT D'AUTEUR D'UN MOT (voir js/data/words.js) :
 //   { w: 'chat', g: 'ch a t', s: 'chat', img: '🐱', lvl: 3 }
@@ -11,7 +12,7 @@
 //         - suffixe ":v" / ":c" / ":d"      -> force le type (ex. "y:c" dans "yoyo")
 //   s   : syllabes écrites séparées par "-" (ex. "to-ma-te"). Défaut = mot entier.
 //   img : illustration (emoji)
-//   lvl : niveau 1..7
+//   lvl : (ignoré) le niveau est calculé à partir des graphèmes (data/curriculum.js)
 //   say : (option) texte à faire prononcer à la synthèse vocale si besoin
 //   ssay: (option) tableau des prononciations des syllabes (ex. ['to','ma','teu'])
 
@@ -57,6 +58,9 @@ export function buildWord(raw, idx = 0) {
   };
   word.skills = [...new Set(graphemes.map((g) => g.key))];
   word.errors = validateWord(word);
+  // Niveau calculé : le mot devient lisible quand tous ses graphèmes ont été appris.
+  word.cluster = word.errors.length === 0 && hasCluster(word);
+  word.level = wordCapsLevel(word);
   return word;
 }
 
@@ -80,6 +84,15 @@ export function letterKinds(word) {
 
 export function displayText(text, script) {
   return script === 'caps' ? text.toLocaleUpperCase('fr-FR') : text;
+}
+
+// Écriture concrète d'un affichage : 'mixed' -> une des trois écritures au hasard,
+// 'bridge' -> script (avec rappel en capitales), 'cbridge' -> cursive (avec rappel en script).
+export function concreteScript(script) {
+  if (script === 'mixed') return ['caps', 'lower', 'cursive'][Math.floor(Math.random() * 3)];
+  if (script === 'bridge') return 'lower';
+  if (script === 'cbridge') return 'cursive';
+  return script || 'caps';
 }
 
 export function shuffle(arr) {

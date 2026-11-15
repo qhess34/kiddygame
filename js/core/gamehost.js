@@ -12,10 +12,11 @@
 import { el, renderWord, renderGrapheme, renderSentence, fitWords } from './render.js';
 import { speak, instruct, stopSpeaking, sfx, randomPraise, randomRetry } from './audio.js';
 import { confetti, sparkle, wiggle, bounce, mascotSay, mascotSVG } from './fx.js';
-import { getState, scriptFor, awardRound, recordAnswer } from './state.js';
-import { poolForLevel, weightedPick } from './library.js';
+import { getState, scriptFor, awardRound, recordAnswer, recordGrapheme, recordLetter } from './state.js';
+import { poolForLevel, widePool, weightedPick } from './library.js';
 import { pickDistractors, shuffle, pickRandom } from './words.js';
-import { levelInfo } from '../data/levels.js';
+import { levelInfo, stageFor } from '../data/curriculum.js';
+import { allowedKeys, learnedLetters } from './progress.js';
 import { breakThen } from './breaks.js';
 
 let active = null;
@@ -69,29 +70,44 @@ export function runGame(game, { level, onExit, options = {} }) {
 
   const settings = getState().settings;
   const script = options.script || scriptFor(level);
+  const focus = options.focus || null;
   const ctx = {
     level,
+    // Difficulté 1..7 pour doser les variantes des jeux.
+    stage: stageFor(level),
+    track: info.track,
     script,
-    // Couleurs pédagogiques : désactivables globalement par le parent.
-    colors: settings.colors !== 'off',
+    // Deux écritures à associer (capitales ↔ script, script ↔ cursive…).
+    pair: options.pair || info.pair || ['caps', 'lower'],
+    focus,
+    // Couleurs pédagogiques : désactivables globalement par le parent ; retirées dans les
+    // niveaux de lecture autonome.
+    colors: settings.colors !== 'off' && info.colors !== false,
     settings,
     options,
     el,
     renderWord: (w, o = {}) => renderWord(w, { script, colors: ctx.colors, ...o }),
     renderGrapheme: (g, o = {}) => renderGrapheme(g, o.script || script, o.colors ?? ctx.colors),
     renderSentence,
-    pool: () => poolForLevel(level),
-    pick: (n, pool) => weightedPick(pool || poolForLevel(level), n),
-    distractors: (target, n, hard = 0, pool) => pickDistractors(target, pool || poolForLevel(level).concat(poolForLevel(Math.max(1, level - 1))), n, hard),
+    pool: () => poolForLevel(level, { focus }),
+    widePool: () => widePool(level),
+    pick: (n, pool) => weightedPick(pool || poolForLevel(level, { focus }), n),
+    distractors: (target, n, hard = 0, pool) => pickDistractors(target, pool || widePool(level), n, hard),
+    // Graphèmes connus (parcours capitales) et lettres apprises (script / cursive).
+    knownKeys: () => { const a = allowedKeys(level); return a ? [...a.keys] : null; },
+    freshKeys: () => { const a = allowedKeys(level); return a ? [...a.fresh] : []; },
+    learnedLetters: () => learnedLetters(level),
+    recordGrapheme: (key, ok, sc = script) => recordGrapheme(key, ok, sc),
+    recordLetter: (letter, ok, sc) => recordLetter(letter, ok, sc || ctx.pair[1]),
     shuffle,
     pickRandom,
     speak,
     instruct,
     sfx,
     fx: { sparkle, wiggle, bounce, confetti, mascotSay },
-    record: (word, ok) => recordAnswer(word, ok),
+    record: (word, ok) => recordAnswer(word, ok, script),
     good(word, node, { say = false } = {}) {
-      if (word) recordAnswer(word, true);
+      if (word) recordAnswer(word, true, script);
       sfx('good');
       sparkle(node);
       bounce(node);
@@ -99,7 +115,7 @@ export function runGame(game, { level, onExit, options = {} }) {
     },
     bad(word, node, { say = true } = {}) {
       session.errors += 1;
-      if (word) recordAnswer(word, false);
+      if (word) recordAnswer(word, false, script);
       sfx('soft');
       wiggle(node);
       if (say) mascotSay(randomRetry(), { mood: 'happy' });

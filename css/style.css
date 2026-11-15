@@ -1,6 +1,8 @@
 /* ===== Lire en jouant — styles de base ===== */
 @font-face { font-family: 'Andika'; src: url('../fonts/andika-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 @font-face { font-family: 'Andika'; src: url('../fonts/andika-latin-700-normal.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+/* Cursive scolaire française (Playwrite France Moderne, licence OFL : fonts/PLAYWRITE-LICENSE.txt) */
+@font-face { font-family: 'Cursive scolaire'; src: url('../fonts/playwrite-fr-moderne-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: block; }
 
 :root {
   /* Code couleur pédagogique */
@@ -58,12 +60,16 @@ button { font-family: var(--font); color: inherit; cursor: pointer; touch-action
 .word-lg { font-size: clamp(40px, 6.5vw, 72px); }
 .word-xl { font-size: clamp(52px, 9vw, 108px); }
 .script-lower { letter-spacing: .02em; }
+/* Cursive : lettres attachées -> aucun espacement, graisse normale (la police n'a qu'une graisse). */
+.script-cursive, .script-cursive .g, .g.script-cursive { font-family: 'Cursive scolaire', var(--font); font-weight: 400; letter-spacing: 0; font-size: .92em; line-height: 1.6; }
+.word.script-cursive { padding: 0 .08em; }
 /* Digrammes : on accentue l'unité d'un léger soulignement. */
 .word .k-d { text-decoration: underline; text-decoration-thickness: .06em; text-underline-offset: .12em; text-decoration-color: rgba(20,148,58,.35); }
 .no-colors .k-d { text-decoration: none; }
 .word .syl + .syl { margin-left: .18em; }
 .word-bridge { display: inline-flex; flex-direction: column; align-items: center; gap: .1em; }
 .word-bridge .bridge-caps { font-size: .42em; font-weight: 700; color: var(--soft); letter-spacing: .12em; }
+.word-bridge .bridge-caps.script-lower { letter-spacing: .04em; font-size: .5em; }
 .sentence { display: inline-flex; flex-wrap: wrap; gap: .1em .45em; align-items: baseline; }
 .sentence .punct { font-size: clamp(30px, 4.6vw, 48px); font-weight: 700; margin-left: -.35em; }
 

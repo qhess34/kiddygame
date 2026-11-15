@@ -7,12 +7,16 @@ import mystery from './mystery.js';
 import listen from './listen.js';
 import cases from './cases.js';
 import sentences from './sentences.js';
+import sounds from './sounds.js';
+import letters from './letters.js';
+import { levelInfo } from '../data/curriculum.js';
 
 // Les 5 modes principaux, puis les jeux bonus qui apparaissent selon le niveau.
-export const GAMES = [match, build, syllables, mystery, listen, cases, sentences];
+export const GAMES = [sounds, letters, match, build, syllables, mystery, listen, cases, sentences];
 
+// Jeux proposés dans un niveau : liste définie dans data/curriculum.js (LEVELS[].games).
 export function gamesForLevel(level) {
-  return GAMES.filter((g) => level >= (g.minLevel || 1) && (!g.maxLevel || level <= g.maxLevel));
+  return levelInfo(level).games.map(gameById).filter(Boolean);
 }
 
 export function gameById(id) { return GAMES.find((g) => g.id === id); }
