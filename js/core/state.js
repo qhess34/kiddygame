@@ -23,6 +23,8 @@ function defaults() {
       itemsPerRound: 3,
       pin: '',
       installDismissed: false,
+      breakEnabled: true,      // pauses actives (exercice physique)
+      breakMinutes: 15,        // temps de jeu entre deux pauses
     },
     progress: {
       currentLevel: 1,

@@ -8,6 +8,7 @@ import { gamesForLevel, gameById } from './games/index.js';
 import { LEVELS, STARS_TO_UNLOCK, levelInfo } from './data/levels.js';
 import { openParentGate } from './screens/parent.js';
 import { installBanner } from './core/install.js';
+import { startBreakTimer, breakThen } from './core/breaks.js';
 
 const app = document.getElementById('app');
 let audioUnlocked = false;
@@ -134,6 +135,7 @@ function showMap(greet = false) {
   const cur = path.querySelector('.current');
   if (cur) cur.scrollIntoView({ block: 'nearest', inline: 'center' });
   if (greet) instruct('Choisis un monde !');
+  breakThen(null);
 }
 
 // ---- Menu des jeux d'un monde ---------------------------------------------
@@ -167,6 +169,7 @@ function showMenu(level) {
   screen.append(header, grid, owl);
   app.append(screen);
   instruct('Choisis un jeu !');
+  breakThen(null);
 }
 
 function play(gameId, level) {
@@ -220,6 +223,7 @@ checkOrientation();
 // Expose quelques fonctions pour les tests automatiques.
 window.__app = { showHome, showMap, showMenu, showAlbum, play, getState };
 
+startBreakTimer();
 route();
 
 // Jeu disponible hors connexion après une première visite.

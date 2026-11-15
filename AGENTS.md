@@ -33,6 +33,7 @@ Application web ludique d'apprentissage de la lecture en français pour un enfan
 | `js/core/audio.js` | Voix française du navigateur (Web Speech API), effets sonores générés (Web Audio) |
 | `js/core/fx.js` | Mascotte Lulu la chouette (SVG), confettis, étincelles, animations |
 | `js/core/gamehost.js` | Hôte des jeux : en-tête, consigne orale, manches, victoire. **Contrat des jeux décrit en tête** |
+| `js/core/breaks.js` | Pauses actives : après `settings.breakMinutes` (15 par défaut) de jeu visible, exercice physique guidé, affiché seulement entre deux manches (`breakThen`). Désactivable : `settings.breakEnabled` |
 | `js/core/install.js` | Proposition d'installation (Android : `beforeinstallprompt` ; iPad : guide Safari) |
 | `js/games/*.js` + `js/games/index.js` | Un module par jeu + registre |
 | `js/screens/parent.js` | Espace parent protégé par code |

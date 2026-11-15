@@ -241,3 +241,33 @@ body.portrait-small #rotate-hint p { margin: 0; }
 .ios-share { display: inline-block; border: 2px solid var(--consonant); border-radius: 6px; padding: 0 6px; color: var(--consonant); font-weight: 700; }
 .install-help-note { color: var(--soft); font-size: 17px; text-align: center; }
 @media (max-height: 500px) { .install-btn { padding: 6px 16px; } .home-screen { gap: 1.5vh; } }
+
+/* ---- Pause active ---- */
+.brk-overlay { position: fixed; inset: 0; z-index: 85; display: flex; align-items: center; justify-content: center; padding: 12px; background: radial-gradient(circle at 50% 30%, #e6fbe0, #b8ecc4 70%, #8fdcab); animation: fadein .3s; }
+.brk-card { background: #fff; border-radius: 36px; box-shadow: var(--shadow); padding: 18px 32px 22px; width: min(720px, 96vw); max-height: 96vh; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
+.brk-owl { position: absolute; left: -10px; bottom: -14px; width: clamp(70px, 11vw, 120px); animation: float 2s ease-in-out infinite; }
+.brk-title { font-size: clamp(24px, 4vw, 38px); font-weight: 700; color: var(--digraph); text-align: center; }
+.brk-icon { height: clamp(100px, 22vh, 190px); display: flex; align-items: center; justify-content: center; }
+.brk-emoji { font-size: clamp(80px, 18vh, 160px); line-height: 1; display: inline-block; }
+.brk-text { font-size: clamp(20px, 3vw, 30px); font-weight: 700; text-align: center; max-width: 600px; }
+.brk-count { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 52px; }
+.brk-dot { font-size: clamp(30px, 6vh, 46px); opacity: .18; filter: grayscale(1); transition: all .25s; }
+.brk-dot.on { opacity: 1; filter: none; transform: scale(1.2); }
+.brk-actions { display: flex; gap: 18px; min-height: 10px; }
+.brk-go { background: var(--good); }
+.brk-more { background: #ffe08a; }
+.anim-jump { animation: brkJump 1.5s ease-in-out infinite; }
+.anim-stretch { animation: brkStretch 2.4s ease-in-out infinite; }
+.anim-sway { animation: brkSway 2s ease-in-out infinite; }
+.anim-stomp { animation: brkStomp .75s ease-in-out infinite; }
+.anim-spin { animation: brkSpin 2.5s linear infinite; }
+.anim-shake { animation: brkShake .5s ease-in-out infinite; }
+.anim-flap { animation: brkFlap .75s ease-in-out infinite; }
+@keyframes brkJump { 0%,100% { transform: translateY(0) scaleY(1); } 15% { transform: translateY(0) scaleY(.85); } 45% { transform: translateY(-38%) scaleY(1.05); } 75% { transform: translateY(0) scaleY(.9); } }
+@keyframes brkStretch { 0%,100% { transform: scale(1, 1); } 50% { transform: scale(.9, 1.25) translateY(-8%); } }
+@keyframes brkSway { 0%,100% { transform: rotate(-16deg); } 50% { transform: rotate(16deg); } }
+@keyframes brkStomp { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-10%) rotate(4deg); } }
+@keyframes brkSpin { to { transform: rotate(360deg); } }
+@keyframes brkShake { 0%,100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(-8%) rotate(-8deg); } 75% { transform: translateX(8%) rotate(8deg); } }
+@keyframes brkFlap { 0%,100% { transform: translateY(0) scaleX(1); } 50% { transform: translateY(-12%) scaleX(.85); } }
+@media (max-height: 500px) { .brk-card { padding: 8px 18px 12px; gap: 4px; } .brk-owl { width: 56px; } .brk-count { min-height: 36px; } }

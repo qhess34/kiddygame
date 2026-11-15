@@ -5,6 +5,7 @@ import { allWords, isWordActive, invalidate } from '../core/library.js';
 import {
   getState, update, resetProgress, exportJSON, importJSON, isUnlocked, levelData, STICKERS, MEDALS,
 } from '../core/state.js';
+import { showBreak } from '../core/breaks.js';
 import { speak, stopSpeaking, frenchVoices, hasSpeech } from '../core/audio.js';
 import { LEVELS, STARS_TO_UNLOCK } from '../data/levels.js';
 import { GRAPHEMES } from '../data/graphemes.js';
@@ -618,6 +619,15 @@ function renderSettings(body, rerender) {
       segmented([['auto', 'Automatique'], ['letters', 'Lettres'], ['syllables', 'Syllabes']], s.buildMode, (v) => set((x) => { x.buildMode = v; }), 'buildMode')),
     el('div', { class: 'pr-setting' }, el('strong', {}, 'Éléments par manche'),
       segmented([[2, '2'], [3, '3'], [4, '4']], s.itemsPerRound, (v) => set((x) => { x.itemsPerRound = Number(v); }), 'itemsPerRound'))));
+
+  // Pauses actives
+  const breakOn = s.breakEnabled !== false;
+  body.append(section('Pauses actives',
+    switchRow('Proposer des pauses pour bouger', 'Après un temps de jeu, Lulu propose un petit exercice physique (sauter comme une grenouille, faire l’avion…). La pause arrive toujours à la fin d’une manche, jamais au milieu.', breakOn, (v) => set((x) => { x.breakEnabled = v; }), 'breakEnabled'),
+    breakOn ? el('div', { class: 'pr-setting' }, el('strong', {}, 'Une pause toutes les'),
+      segmented([[5, '5 min'], [10, '10 min'], [15, '15 min'], [20, '20 min'], [30, '30 min']], Number(s.breakMinutes) || 15, (v) => set((x) => { x.breakMinutes = Number(v); }), 'breakMinutes'),
+      hint('Seul le temps passé à jouer est compté (pas quand l’application est fermée ou en arrière-plan).')) : null,
+    el('button', { class: 'pr-btn', 'data-act': 'test-break', onclick: () => showBreak() }, '🤸 Essayer une pause maintenant')));
 
   // Voix
   const voices = frenchVoices();

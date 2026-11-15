@@ -16,6 +16,7 @@ import { getState, scriptFor, awardRound, recordAnswer } from './state.js';
 import { poolForLevel, weightedPick } from './library.js';
 import { pickDistractors, shuffle, pickRandom } from './words.js';
 import { levelInfo } from '../data/levels.js';
+import { breakThen } from './breaks.js';
 
 let active = null;
 
@@ -138,8 +139,8 @@ export function runGame(game, { level, onExit, options = {} }) {
         ...news.medals.map((m) => el('div', { class: 'victory-gift' }, 'Médaille : ', el('span', { class: 'big-emoji' }, m.icon))),
         news.unlockedLevel ? el('div', { class: 'victory-gift' }, '🗺️ Nouveau monde : ', levelInfo(news.unlockedLevel).world, ' ', levelInfo(news.unlockedLevel).emoji) : null,
         el('div', { class: 'victory-actions' },
-          el('button', { class: 'big-btn btn-again', 'aria-label': 'Encore', onclick: () => { sfx('tap'); overlay.remove(); startRound(); } }, '▶️'),
-          el('button', { class: 'big-btn btn-menu', 'aria-label': 'Menu', onclick: () => { sfx('tap'); overlay.remove(); stopGame(); onExit && onExit(); } }, '🏠'),
+          el('button', { class: 'big-btn btn-again', 'aria-label': 'Encore', onclick: () => { sfx('tap'); overlay.remove(); breakThen(startRound); } }, '▶️'),
+          el('button', { class: 'big-btn btn-menu', 'aria-label': 'Menu', onclick: () => { sfx('tap'); overlay.remove(); stopGame(); breakThen(() => onExit && onExit()); } }, '🏠'),
         ),
       ),
     );
