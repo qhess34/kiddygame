@@ -13,6 +13,7 @@ import { allowedKeys, learnedLetters } from './core/progress.js';
 import { openParentGate } from './screens/parent.js';
 import { installBanner } from './core/install.js';
 import { startBreakTimer, breakThen } from './core/breaks.js';
+import { startScreenTime } from './core/screentime.js';
 
 const app = document.getElementById('app');
 let audioUnlocked = false;
@@ -337,6 +338,7 @@ window.__app = { showHome, showMap, showMenu, showAlbum, play, lesson, getState 
 
 startBreakTimer();
 route();
+startScreenTime();
 
 // Jeu disponible hors connexion après une première visite.
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

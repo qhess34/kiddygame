@@ -9,6 +9,7 @@ import {
 import { STATUS, lessonStatus, difficultNotions, statusFromStats } from '../core/progress.js';
 import { recordedIds, saveRecording, deleteRecording, playSound, soundLesson } from '../core/sounds.js';
 import { showBreak } from '../core/breaks.js';
+import { remainingSeconds, isLocked, addTime, resetScreenTime, unlockTime } from '../core/screentime.js';
 import { speak, stopSpeaking, frenchVoices, hasSpeech } from '../core/audio.js';
 import { LEVELS, TRACKS, levelInfo } from '../data/levels.js';
 import { GRAPHEME_LESSONS, LETTER_LESSONS, lessonById, keyLevel } from '../data/curriculum.js';
@@ -919,6 +920,26 @@ function renderSettings(body, rerender) {
       segmented([['auto', 'Automatique'], ['letters', 'Lettres'], ['syllables', 'Syllabes']], s.buildMode, (v) => set((x) => { x.buildMode = v; }), 'buildMode')),
     el('div', { class: 'pr-setting' }, el('strong', {}, 'Éléments par manche'),
       segmented([[2, '2'], [3, '3'], [4, '4']], s.itemsPerRound, (v) => set((x) => { x.itemsPerRound = Number(v); }), 'itemsPerRound'))));
+
+  // Temps d'écran (blocage)
+  const limitOn = s.limitEnabled !== false;
+  const left = Math.ceil(remainingSeconds() / 60);
+  const until = unlockTime();
+  body.append(section('Temps d’écran',
+    switchRow('Bloquer le jeu après un temps de jeu', 'L’application se met en pause. Votre code parent permet d’ajouter du temps ; sinon le blocage se lève tout seul. Fermer ou relancer l’application ne le lève pas.', limitOn, (v) => set((x) => { x.limitEnabled = v; }), 'limitEnabled'),
+    limitOn ? el('div', { class: 'pr-setting' }, el('strong', {}, 'Bloquer après'),
+      segmented([[15, '15 min'], [30, '30 min'], [45, '45 min'], [60, '1 h'], [90, '1 h 30'], [120, '2 h']], Number(s.limitMinutes) || 60, (v) => set((x) => { x.limitMinutes = Number(v); }), 'limitMinutes')) : null,
+    limitOn ? el('div', { class: 'pr-setting' }, el('strong', {}, 'Durée du blocage'),
+      segmented([[30, '30 min'], [60, '1 h'], [120, '2 h'], [180, '3 h']], Number(s.lockMinutes) || 60, (v) => set((x) => { x.lockMinutes = Number(v); }), 'lockMinutes'),
+      hint('Après ce délai, le jeu se débloque seul et le compteur repart à zéro (de même après une pause aussi longue sans jouer).')) : null,
+    limitOn ? el('div', { class: 'pr-setting' }, el('strong', {}, 'Temps ajouté avec le code parent'),
+      segmented([[10, '10 min'], [15, '15 min'], [30, '30 min'], [60, '1 h']], Number(s.extraMinutes) || 15, (v) => set((x) => { x.extraMinutes = Number(v); }), 'extraMinutes')) : null,
+    limitOn ? hint(isLocked() && until
+      ? `Jeu bloqué jusqu’à ${until.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}.`
+      : `Temps de jeu restant avant le blocage : ${left} min.`) : null,
+    limitOn ? el('div', { class: 'pr-row' },
+      el('button', { class: 'pr-btn', 'data-act': 'add-time', onclick: () => { addTime(); toast('Temps ajouté.'); rerender(); } }, `➕ Ajouter ${Number(s.extraMinutes) || 15} min maintenant`),
+      el('button', { class: 'pr-btn', 'data-act': 'reset-time', onclick: () => { resetScreenTime(); toast('Compteur remis à zéro.'); rerender(); } }, '🔄 Remettre le compteur à zéro')) : null));
 
   // Pauses actives
   const breakOn = s.breakEnabled !== false;

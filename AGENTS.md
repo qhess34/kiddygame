@@ -39,6 +39,7 @@ Application web ludique d'apprentissage de la lecture en français pour un enfan
 | `js/screens/lesson.js` | Mini-leçon en 5 étapes (découvrir, écouter, reconnaître, retrouver dans des mots, bravo + entraînement) |
 | `js/data/curriculum.js` | **Parcours, niveaux et mini-leçons** (`LEVELS`, `LESSONS`, `wordCapsLevel`, `stageFor`) ; `js/data/levels.js` le ré-exporte |
 | `js/core/breaks.js` | Pauses actives : après `settings.breakMinutes` (15 par défaut) de jeu visible, exercice physique guidé, affiché seulement entre deux manches (`breakThen`). Désactivable : `settings.breakEnabled` |
+| `js/core/screentime.js` | Temps d'écran : blocage après `settings.limitMinutes` (60) de jeu ; le code parent ajoute `settings.extraMinutes` (15) ; levée automatique après `settings.lockMinutes` (60). État sauvegardé dans `state.screen` : relancer l'application ne lève pas le blocage. Désactivable : `settings.limitEnabled` |
 | `js/core/install.js` | Proposition d'installation (Android : `beforeinstallprompt` ; iPad : guide Safari) |
 | `js/games/*.js` + `js/games/index.js` | Un module par jeu + registre |
 | `js/screens/parent.js` | Espace parent protégé par code |

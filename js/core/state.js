@@ -25,6 +25,10 @@ function defaults() {
       installDismissed: false,
       breakEnabled: true,      // pauses actives (exercice physique)
       breakMinutes: 15,        // temps de jeu entre deux pauses
+      limitEnabled: true,      // temps d'écran limité (blocage)
+      limitMinutes: 60,        // temps de jeu avant blocage
+      lockMinutes: 60,         // durée du blocage (levé tout seul ensuite)
+      extraMinutes: 15,        // temps ajouté quand le parent débloque avec son code
     },
     progress: {
       currentLevel: 1,
@@ -45,6 +49,8 @@ function defaults() {
       days: {},                // 'YYYY-MM-DD' -> rounds
     },
     customWords: [],
+    // Temps d'écran (js/core/screentime.js) : secondes jouées, temps ajouté, début du blocage.
+    screen: { used: 0, bonus: 0, lockedAt: null, lastActive: 0 },
   };
 }
 
@@ -106,6 +112,7 @@ export function resetProgress({ keepSettings = true } = {}) {
     fresh.settings = state.settings;
     fresh.child = state.child;
     fresh.customWords = state.customWords;
+    fresh.screen = state.screen; // une réinitialisation ne lève pas le blocage
   }
   state = fresh;
   save();

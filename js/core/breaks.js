@@ -42,6 +42,7 @@ export function startBreakTimer() {
   timer = setInterval(() => {
     if (!breakEnabled() || showing || document.visibilityState !== 'visible') return;
     if (document.querySelector('#app > .pr')) return; // espace parent : on ne compte pas
+    if (document.querySelector('.lock-overlay')) return; // temps de jeu terminé (blocage)
     activeSeconds += 1;
     if (activeSeconds >= limitSeconds()) due = true;
   }, 1000);
